@@ -29,71 +29,25 @@ export default function ChatPaciente({
   const [ouvindo, setOuvindo] = useState(false);
   const [erroVoz, setErroVoz] = useState("");
   const [suportaVoz, setSuportaVoz] = useState(true);
+  const [isSafari, setIsSafari] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionType | null>(null);
 
-  // Inicializar Web Speech API
+  // Inicializar: detectar Safari e validar suporte a Web Speech API
   useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (typeof window === "undefined") return;
 
+    const detectSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    setIsSafari(detectSafari);
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setSuportaVoz(false);
-      return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "pt-BR";
-    recognition.continuous = false;
-    recognition.interimResults = true;
-
-    recognition.onstart = () => {
-      setOuvindo(true);
-      setErroVoz("");
-    };
-
-    recognition.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcriptParcial = event.results[i][0].transcript;
-        transcript += transcriptParcial;
-      }
-
-      if (event.isFinal) {
-        setInput((prev) => {
-          const novoTexto = prev.trim() ? `${prev} ${transcript}` : transcript;
-          return novoTexto;
-        });
-      }
-    };
-
-    recognition.onerror = (event: any) => {
-      let mensagem = "Erro ao capturar áudio";
-
-      if (event.error === "no-speech") {
-        mensagem = "Nenhum som detectado. Tente novamente.";
-      } else if (event.error === "network") {
-        mensagem = "Erro de conexão. Verifique sua internet.";
-      } else if (event.error === "not-allowed") {
-        mensagem = "Permissão de microfone negada.";
-      } else if (event.error === "service-not-allowed") {
-        mensagem = "Serviço de reconhecimento não disponível.";
-      }
-
-      setErroVoz(mensagem);
-      setOuvindo(false);
-    };
-
-    recognition.onend = () => {
-      setOuvindo(false);
-    };
-
-    recognitionRef.current = recognition;
-
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
+      recognitionRef.current?.abort();
     };
   }, []);
 
@@ -109,20 +63,86 @@ export default function ChatPaciente({
     }
   }, [mensagens, carregando]);
 
-  const toggleMicrofone = () => {
-    if (!recognitionRef.current) return;
-
+  const iniciarTranscricao = () => {
     if (ouvindo) {
-      recognitionRef.current.stop();
+      recognitionRef.current?.stop();
       setOuvindo(false);
-    } else {
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setErroVoz(
+        "Seu navegador não oferece suporte à transcrição por voz. Tente usar o Google Chrome ou digite sua pergunta."
+      );
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      console.log("SpeechRecognition iniciou");
+      setOuvindo(true);
       setErroVoz("");
-      try {
-        recognitionRef.current.start();
-      } catch (error) {
-        console.error("Erro ao iniciar reconhecimento:", error);
-        setErroVoz("Erro ao iniciar microfone. Recarregue a página.");
+    };
+
+    recognition.onresult = (event: any) => {
+      let transcriptFinal = "";
+      let transcriptParcial = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          transcriptFinal += transcript;
+        } else {
+          transcriptParcial += transcript;
+        }
       }
+
+      const textoReconhecido = (transcriptFinal || transcriptParcial).trim();
+      console.log("Resultado de voz:", textoReconhecido);
+
+      if (textoReconhecido) {
+        setInput(textoReconhecido);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Erro SpeechRecognition:", event.error);
+      const mensagens: Record<string, string> = {
+        "not-allowed":
+          "Permissão do microfone negada. Libere o microfone nas configurações do navegador.",
+        "no-speech":
+          "Nenhuma fala foi detectada. Tente novamente falando mais próximo ao microfone.",
+        "audio-capture": "Não foi possível acessar o microfone.",
+        "network":
+          "Erro de rede no reconhecimento de voz. Tente novamente ou use digitação.",
+      };
+      setErroVoz(
+        mensagens[event.error] ??
+          "Não foi possível transcrever a fala. Tente novamente ou use digitação."
+      );
+      setOuvindo(false);
+    };
+
+    recognition.onend = () => {
+      console.log("SpeechRecognition terminou");
+      setOuvindo(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error("Falha ao iniciar recognition:", error);
+      setErroVoz("Erro ao iniciar microfone. Recarregue a página.");
     }
   };
 
@@ -249,7 +269,7 @@ export default function ChatPaciente({
           {suportaVoz && (
             <button
               type="button"
-              onClick={toggleMicrofone}
+              onClick={iniciarTranscricao}
               disabled={carregando}
               title={ouvindo ? "Ouvindo... Clique para parar" : "Clique para falar"}
               className={`py-2 px-4 rounded-lg font-semibold transition-all ${
@@ -289,6 +309,12 @@ export default function ChatPaciente({
             ? "💡 Dica: Você pode digitar ou usar o microfone 🎙️ para transcrever sua pergunta"
             : "💡 Dica: Pergunte sobre sintomas, histórico e solicite sinais vitais"}
         </p>
+
+        {suportaVoz && isSafari && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mt-2">
+            ⚠️ O Safari pode não retornar transcrição neste ambiente. Para usar voz, teste no Google Chrome. A digitação continua disponível.
+          </p>
+        )}
       </form>
     </div>
   );
