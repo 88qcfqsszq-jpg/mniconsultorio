@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import ChatPaciente from "@/components/ChatPaciente";
 import PainelExameFisico from "@/components/PainelExameFisico";
 import FormularioSOAP from "@/components/FormularioSOAP";
+import PainelDiagnostico from "@/components/PainelDiagnostico";
 import FeedbackOSCE from "@/components/FeedbackOSCE";
 import LoadingRelatorio from "@/components/LoadingRelatorio";
 import PainelExamesComplementares from "@/components/PainelExamesComplementares";
@@ -236,13 +237,7 @@ function CasoPageContent() {
     [caso, sinaisVitaisSolicitados, manobrasSolicitadas, tempoDecorrido, calcularNota]
   );
 
-  const handleFinalizarAtendimento = async (dados: {
-    soap: FormularioSOAPType;
-    diagnostico: DiagnosticoFormulario;
-  }) => {
-    // Armazenar dados para uso do botão Finalizar na sidebar
-    setDadosSOAP(dados);
-
+  const handleFinalizarAtendimento = async () => {
     // Inicializar loading
     setGerandoFeedback(true);
     setProgressoFeedback(0);
@@ -286,11 +281,11 @@ function CasoPageContent() {
           })),
           sinaisVitaisSolicitados,
           sinaisVitaisDoEstudante: sinaisVitaisSolicitados ? caso?.sinaisVitaisCorretos : undefined,
-          hipoteseDiagnostica: dados.diagnostico.hipotesePrincipal,
-          diagnosticosDiferenciais: dados.diagnostico.diagnosticosDisferenciais,
-          examesSolicitados: dados.diagnostico.examesIndicados,
-          conduta: dados.diagnostico.conduta,
-          soap: dados.soap,
+          hipoteseDiagnostica: diagnostico.hipotesePrincipal,
+          diagnosticosDiferenciais: diagnostico.diagnosticosDisferenciais,
+          examesSolicitados: diagnostico.examesIndicados,
+          conduta: diagnostico.conduta,
+          soap: soap,
           tempoAtendimento: tempoDecorrido,
         }),
       });
@@ -342,7 +337,18 @@ function CasoPageContent() {
 
   const [abaAtiva, setAbaAtiva] = useState<"paciente" | "exame" | "exames" | "soap">("paciente");
   const [menuAtivo, setMenuAtivo] = useState<"paciente" | "exame" | "exames" | "soap" | "finalizar">("paciente");
-  const [dadosSOAP, setDadosSOAP] = useState<{ soap: FormularioSOAPType; diagnostico: DiagnosticoFormulario } | null>(null);
+  const [soap, setSOAP] = useState<FormularioSOAPType>({
+    subjetivo: "",
+    objetivo: "",
+    avaliacao: "",
+    plano: "",
+  });
+  const [diagnostico, setDiagnostico] = useState<DiagnosticoFormulario>({
+    hipotesePrincipal: "",
+    diagnosticosDisferenciais: [],
+    examesIndicados: [],
+    conduta: "",
+  });
 
   if (!caso) {
     return (
@@ -377,7 +383,7 @@ function CasoPageContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-white">
       {/* Aviso OSCE */}
       {modoOSCE && (
         <div className="bg-blue-700 text-white py-2 px-4 text-center text-xs font-semibold">
@@ -446,14 +452,13 @@ function CasoPageContent() {
                     onClick={() => {
                       if (item.id === "finalizar") {
                         if (
-                          dadosSOAP &&
-                          dadosSOAP.soap.subjetivo.trim() &&
-                          dadosSOAP.soap.objetivo.trim() &&
-                          dadosSOAP.soap.avaliacao.trim() &&
-                          dadosSOAP.soap.plano.trim() &&
-                          dadosSOAP.diagnostico.hipotesePrincipal.trim()
+                          soap.subjetivo.trim() &&
+                          soap.objetivo.trim() &&
+                          soap.avaliacao.trim() &&
+                          soap.plano.trim() &&
+                          diagnostico.hipotesePrincipal.trim()
                         ) {
-                          handleFinalizarAtendimento(dadosSOAP);
+                          handleFinalizarAtendimento();
                         } else {
                           alert("Por favor, preencha todos os campos da Avaliação Clínica antes de finalizar:\n- Subjetivo\n- Objetivo\n- Avaliação\n- Plano\n- Hipótese Diagnóstica Principal");
                         }
@@ -518,6 +523,12 @@ function CasoPageContent() {
               )}
             </div>
 
+            {/* Diagnóstico e Conduta */}
+            <PainelDiagnostico
+              onSubmit={handleFinalizarAtendimento}
+              onChange={setDiagnostico}
+              desabilitado={phase === "feedback"}
+            />
           </div>
 
           {/* Coluna 2: Conteúdo Central */}
@@ -559,7 +570,7 @@ function CasoPageContent() {
           {/* Coluna 3: Painel Direito Fixo (Avaliação Clínica) */}
           <div className="min-w-0">
             <div className="sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
-              <FormularioSOAP onSubmit={handleFinalizarAtendimento} onDadosChange={setDadosSOAP} desabilitado={phase === "feedback"} />
+              <FormularioSOAP onSubmit={handleFinalizarAtendimento} onChange={setSOAP} desabilitado={phase === "feedback"} />
             </div>
           </div>
         </div>
