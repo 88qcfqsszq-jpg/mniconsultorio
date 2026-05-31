@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { DiagnosticoFormulario, FormularioSOAP } from "@/lib/types";
 
 interface FormularioSOAPProps {
   onSubmit: (dados: {
+    soap: FormularioSOAP;
+    diagnostico: DiagnosticoFormulario;
+  }) => void;
+  onDadosChange?: (dados: {
     soap: FormularioSOAP;
     diagnostico: DiagnosticoFormulario;
   }) => void;
@@ -13,6 +17,7 @@ interface FormularioSOAPProps {
 
 export default function FormularioSOAP({
   onSubmit,
+  onDadosChange,
   desabilitado = false,
 }: FormularioSOAPProps) {
   const [soap, setSOAP] = useState<FormularioSOAP>({
@@ -28,6 +33,12 @@ export default function FormularioSOAP({
     examesIndicados: [],
     conduta: "",
   });
+
+  useEffect(() => {
+    if (onDadosChange) {
+      onDadosChange({ soap, diagnostico });
+    }
+  }, [soap, diagnostico, onDadosChange]);
 
   const [novoDiferencial, setNovoDiferencial] = useState("");
   const [novoExame, setNovoExame] = useState("");

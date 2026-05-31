@@ -240,6 +240,9 @@ function CasoPageContent() {
     soap: FormularioSOAPType;
     diagnostico: DiagnosticoFormulario;
   }) => {
+    // Armazenar dados para uso do botão Finalizar na sidebar
+    setDadosSOAP(dados);
+
     // Inicializar loading
     setGerandoFeedback(true);
     setProgressoFeedback(0);
@@ -339,6 +342,7 @@ function CasoPageContent() {
 
   const [abaAtiva, setAbaAtiva] = useState<"paciente" | "exame" | "exames" | "soap">("paciente");
   const [menuAtivo, setMenuAtivo] = useState<"paciente" | "exame" | "exames" | "soap" | "finalizar">("paciente");
+  const [dadosSOAP, setDadosSOAP] = useState<{ soap: FormularioSOAPType; diagnostico: DiagnosticoFormulario } | null>(null);
 
   if (!caso) {
     return (
@@ -439,7 +443,17 @@ function CasoPageContent() {
                 ].map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => setMenuAtivo(item.id)}
+                    onClick={() => {
+                      if (item.id === "finalizar") {
+                        if (dadosSOAP) {
+                          handleFinalizarAtendimento(dadosSOAP);
+                        } else {
+                          alert("Por favor, preencha a Avaliação Clínica antes de finalizar.");
+                        }
+                      } else {
+                        setMenuAtivo(item.id);
+                      }
+                    }}
                     className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                       menuAtivo === item.id
                         ? "bg-blue-600 text-white shadow-sm"
@@ -544,7 +558,7 @@ function CasoPageContent() {
           {/* Coluna 3: Painel Direito Fixo (Avaliação Clínica) */}
           <div className="min-w-0">
             <div className="sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
-              <FormularioSOAP onSubmit={handleFinalizarAtendimento} desabilitado={phase === "feedback"} />
+              <FormularioSOAP onSubmit={handleFinalizarAtendimento} onDadosChange={setDadosSOAP} desabilitado={phase === "feedback"} />
             </div>
           </div>
         </div>
