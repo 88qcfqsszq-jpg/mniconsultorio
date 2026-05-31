@@ -7,8 +7,6 @@ interface ChatPacienteProps {
   nomePaciente: string;
   casoId: string;
   onMensagensChange?: (mensagens: MensagemChat[]) => void;
-  mensagens?: MensagemChat[];
-  setMensagens?: (mensagens: MensagemChat[]) => void;
 }
 
 type SpeechRecognitionType = any;
@@ -17,10 +15,8 @@ export default function ChatPaciente({
   nomePaciente,
   casoId,
   onMensagensChange,
-  mensagens: propMensagens,
-  setMensagens: propSetMensagens,
 }: ChatPacienteProps) {
-  const [localMensagens, setLocalMensagens] = useState<MensagemChat[]>([
+  const [mensagens, setMensagens] = useState<MensagemChat[]>([
     {
       id: "1",
       tipo: "paciente",
@@ -28,18 +24,6 @@ export default function ChatPaciente({
       timestamp: new Date(),
     },
   ]);
-
-  // Usar props se fornecidas (estado centralizado do pai), senão usar estado local
-  const mensagens = propMensagens !== undefined ? propMensagens : localMensagens;
-
-  const setMensagens = (updater: MensagemChat[] | ((prev: MensagemChat[]) => MensagemChat[])) => {
-    const novasMensagens = typeof updater === 'function' ? updater(mensagens) : updater;
-    if (propSetMensagens) {
-      propSetMensagens(novasMensagens);
-    } else {
-      setLocalMensagens(novasMensagens);
-    }
-  };
 
   const [input, setInput] = useState("");
   const [carregando, setCarregando] = useState(false);
@@ -173,13 +157,15 @@ export default function ChatPaciente({
       timestamp: new Date(),
     };
 
-    setMensagens((prev) => [...prev, novaMensagemEstudante]);
+    // Atualizar estado localmente
+    const mensagensAtualizadas = [...mensagens, novaMensagemEstudante];
+    setMensagens(mensagensAtualizadas);
     setInput("");
     setCarregando(true);
 
     try {
-      // Preparar histórico para o backend
-      const historico = mensagens.map((msg) => ({
+      // Preparar histórico para o backend (inclui a mensagem do estudante)
+      const historico = mensagensAtualizadas.map((msg) => ({
         tipo: msg.tipo as "estudante" | "paciente",
         conteudo: msg.conteudo,
       }));

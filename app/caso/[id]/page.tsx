@@ -335,8 +335,8 @@ function CasoPageContent() {
     }
   };
 
-  const [abaAtiva, setAbaAtiva] = useState<"paciente" | "exame" | "exames" | "soap" | "sinaisVitais">("paciente");
-  const [menuAtivo, setMenuAtivo] = useState<"paciente" | "exame" | "exames" | "soap" | "sinaisVitais">("paciente");
+  const [abaAtiva, setAbaAtiva] = useState<"paciente" | "exame" | "exames" | "sinaisVitais">("paciente");
+  const [menuAtivo, setMenuAtivo] = useState<"paciente" | "exame" | "exames" | "sinaisVitais">("paciente");
   const [soap, setSOAP] = useState<FormularioSOAPType>({
     subjetivo: "",
     objetivo: "",
@@ -380,7 +380,6 @@ function CasoPageContent() {
     { id: "exame" as const, label: "Exame", icon: "🥼" },
     { id: "exames" as const, label: "Exames", icon: "🧪" },
     { id: "sinaisVitais" as const, label: "Sinais Vitais", icon: "📊" },
-    { id: "soap" as const, label: "SOAP", icon: "📝" },
   ];
 
   return (
@@ -447,7 +446,6 @@ function CasoPageContent() {
                   { id: "exame" as const, label: "Exame Físico", icon: "🥼" },
                   { id: "exames" as const, label: "Exames", icon: "🧪" },
                   { id: "sinaisVitais" as const, label: "Sinais Vitais", icon: "📊" },
-                  { id: "soap" as const, label: "SOAP", icon: "📝" },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -521,7 +519,7 @@ function CasoPageContent() {
           <div className="min-w-0 space-y-4">
             {/* Chat */}
             <div className="h-[420px] flex flex-col">
-              <ChatPaciente nomePaciente={caso.paciente.nome} casoId={casoId} onMensagensChange={setMensagens} mensagens={mensagens} setMensagens={setMensagens} />
+              <ChatPaciente nomePaciente={caso.paciente.nome} casoId={casoId} onMensagensChange={setMensagens} />
             </div>
 
             {/* Conteúdo Dinâmico baseado no Menu */}
@@ -592,10 +590,6 @@ function CasoPageContent() {
                 )}
               </div>
             )}
-
-            {menuAtivo === "soap" && (
-              <FormularioSOAP onSubmit={handleFinalizarAtendimento} onChange={setSOAP} desabilitado={phase === "feedback"} />
-            )}
           </div>
 
           {/* Coluna 3: Painel Direito Fixo (Avaliação Clínica) */}
@@ -606,33 +600,30 @@ function CasoPageContent() {
           </div>
         </div>
 
-        {/* Layout Mobile: abas */}
-        <div className="lg:hidden">
-          {abaAtiva === "paciente" && (
+        {/* Layout Mobile: abas dinâmicas */}
+        <div className="lg:hidden space-y-4">
+          <div className={abaAtiva === "paciente" ? "block" : "hidden"}>
             <div className="h-[calc(100dvh-200px)] min-h-80 flex flex-col">
-              <ChatPaciente nomePaciente={caso.paciente.nome} casoId={casoId} onMensagensChange={setMensagens} mensagens={mensagens} setMensagens={setMensagens} />
+              <ChatPaciente nomePaciente={caso.paciente.nome} casoId={casoId} onMensagensChange={setMensagens} />
             </div>
-          )}
-          {abaAtiva === "exame" && (
+          </div>
+          <div className={abaAtiva === "exame" ? "block" : "hidden"}>
             <PainelExameFisico
               caso={caso}
               manobrasSolicitadas={manobrasSolicitadas}
               onNovaManobra={handleNovaManobra}
               modoOSCE={modoOSCE}
             />
-          )}
-          {abaAtiva === "exames" && (
+          </div>
+          <div className={abaAtiva === "exames" ? "block" : "hidden"}>
             <PainelExamesComplementares
               casoId={casoId}
               examesSolicitados={examesSolicitados}
               onNovoExame={handleNovoExame}
               desabilitado={phase === "feedback"}
             />
-          )}
-          {abaAtiva === "soap" && (
-            <FormularioSOAP onSubmit={handleFinalizarAtendimento} onChange={setSOAP} desabilitado={phase === "feedback"} />
-          )}
-          {abaAtiva === "sinaisVitais" && (
+          </div>
+          <div className={abaAtiva === "sinaisVitais" ? "block" : "hidden"}>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">📊</span>
@@ -678,7 +669,15 @@ function CasoPageContent() {
                 </div>
               )}
             </div>
-          )}
+          </div>
+
+          {/* Blocos fixos no mobile (abaixo das abas dinâmicas) */}
+          <FormularioSOAP onSubmit={handleFinalizarAtendimento} onChange={setSOAP} desabilitado={phase === "feedback"} />
+          <PainelDiagnostico
+            onSubmit={handleFinalizarAtendimento}
+            onChange={setDiagnostico}
+            desabilitado={phase === "feedback"}
+          />
         </div>
       </div>
 
