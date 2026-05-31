@@ -551,9 +551,6 @@ function CasoPageContent() {
 
             {menuAtivo === "exame" && (
               <PainelExameFisico
-                sinaisVitaisSolicitados={sinaisVitaisSolicitados}
-                sinaisVitaisData={sinaisVitaisSolicitados ? caso.sinaisVitaisCorretos : undefined}
-                onSolicitarSinaisVitais={() => setSinaisVitaisSolicitados(true)}
                 caso={caso}
                 manobrasSolicitadas={manobrasSolicitadas}
                 onNovaManobra={handleNovaManobra}
@@ -595,9 +592,6 @@ function CasoPageContent() {
           )}
           {abaAtiva === "exame" && (
             <PainelExameFisico
-              sinaisVitaisSolicitados={sinaisVitaisSolicitados}
-              sinaisVitaisData={sinaisVitaisSolicitados ? caso.sinaisVitaisCorretos : undefined}
-              onSolicitarSinaisVitais={() => setSinaisVitaisSolicitados(true)}
               caso={caso}
               manobrasSolicitadas={manobrasSolicitadas}
               onNovaManobra={handleNovaManobra}
