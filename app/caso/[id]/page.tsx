@@ -110,7 +110,7 @@ function CasoPageContent() {
 
   const calcularNota = useCallback(
     (soap: FormularioSOAPType, diagnostico: DiagnosticoFormulario): number => {
-      let nota = 6; // Base
+      let nota = 12; // Base (escala 0-20)
 
       if (!caso) return nota;
 
@@ -121,12 +121,12 @@ function CasoPageContent() {
           .includes("dor") ||
         soap.subjetivo.toLowerCase().includes("início")
       ) {
-        nota += 0.5;
+        nota += 1;
       }
 
       // Avaliação do Objetivo
       if (sinaisVitaisSolicitados && exameFisicoSolicitado) {
-        nota += 1;
+        nota += 2;
       }
 
       // Avaliação da Hipótese Diagnóstica
@@ -135,14 +135,14 @@ function CasoPageContent() {
         diagnostico.hipotesePrincipal.toLowerCase() ===
         diagCorreto.toLowerCase()
       ) {
-        nota += 2;
+        nota += 4;
       } else if (
         diagnostico.diagnosticosDisferenciais
           .join(" ")
           .toLowerCase()
           .includes(diagCorreto.toLowerCase())
       ) {
-        nota += 1;
+        nota += 2;
       }
 
       // Avaliação dos Exames
@@ -153,17 +153,25 @@ function CasoPageContent() {
           .toLowerCase()
           .includes(exame.toLowerCase())
       );
-      nota += examesCorretos.length * 0.5;
+      nota += examesCorretos.length * 1;
 
       // Avaliação da Conduta
       if (
         soap.plano.length > 50 &&
         diagnostico.conduta.length > 50
       ) {
-        nota += 1;
+        nota += 2;
       }
 
-      return Math.min(nota, 10);
+      // Se diagnóstico correto, garantir mínimo 17
+      if (
+        diagnostico.hipotesePrincipal.toLowerCase() ===
+        diagCorreto.toLowerCase()
+      ) {
+        nota = Math.max(nota, 17);
+      }
+
+      return Math.min(nota, 20);
     },
     [caso, sinaisVitaisSolicitados, manobrasSolicitadas]
   );
@@ -215,8 +223,8 @@ function CasoPageContent() {
 
       const feedbackPadrao: FeedbackOSCEType = {
         nota,
-        percentual: Math.round(nota * 10),
-        classificacao: nota >= 9 ? "Excelente" : nota >= 7 ? "Bom" : nota >= 5 ? "Regular" : "Insuficiente",
+        percentual: Math.round((nota / 20) * 100),
+        classificacao: nota >= 18 ? "Excelente" : nota >= 14 ? "Bom" : nota >= 10 ? "Regular" : "Insuficiente",
         justificativaNota: "Aguardando avaliação detalhada...",
         tempoAtendimento: tempoDecorrido,
         resumoCaso: { diagnosticoEsperado: "", sindromePrincipal: "", achadosChave: [], raciocinioEsperado: "" },

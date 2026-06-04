@@ -3,6 +3,7 @@ import { casosOSCE } from "@/data/casos-osce";
 import { criarPromptExaminador } from "@/lib/prompts";
 import { openai } from "@/lib/openai";
 import { FeedbackOSCE } from "@/lib/types";
+import { verificarDiagnosticoCompativel } from "@/lib/diagnosticoHelper";
 
 interface RequestBody {
   casoId: string;
@@ -115,11 +116,19 @@ export async function POST(request: NextRequest) {
 
     // Se OpenAI falhou, retornar feedback padrão
     if (!respostaRaw) {
+      const diagnosticoCorreto = verificarDiagnosticoCompativel(
+        hipoteseDiagnostica,
+        caso.dados_ocultos_do_sistema.diagnostico_principal
+      );
+      const notaBase = diagnosticoCorreto ? 17 : 12;
+
       const feedbackPadrao: FeedbackOSCE = {
-        nota: 6,
-        percentual: 60,
-        classificacao: "Regular",
-        justificativaNota: "Avaliação padrão. Configure OPENAI_API_KEY para feedback detalhado.",
+        nota: notaBase,
+        percentual: Math.round((notaBase / 20) * 100),
+        classificacao: diagnosticoCorreto ? "Excelente" : "Regular",
+        justificativaNota: diagnosticoCorreto
+          ? "Diagnóstico correto. Avaliação padrão. Configure OPENAI_API_KEY para feedback detalhado."
+          : "Avaliação padrão. Configure OPENAI_API_KEY para feedback detalhado.",
         tempoAtendimento,
         resumoCaso: {
           diagnosticoEsperado: caso.dados_ocultos_do_sistema.diagnostico_principal,
@@ -181,17 +190,59 @@ export async function POST(request: NextRequest) {
     let feedback: FeedbackOSCE;
     try {
       feedback = JSON.parse(respostaRaw);
+
       // Adicionar tempoAtendimento se não estiver na resposta
       if (!feedback.tempoAtendimento) {
         feedback.tempoAtendimento = tempoAtendimento;
       }
+
+      // Normalizar escala: se nota ≤ 10, assumir escala 0-10 e converter para 0-20
+      if (feedback.nota <= 10) {
+        feedback.nota = feedback.nota * 2;
+      }
+
+      // Verificar compatibilidade diagnóstica
+      const diagnosticoCorreto = verificarDiagnosticoCompativel(
+        hipoteseDiagnostica,
+        caso.dados_ocultos_do_sistema.diagnostico_principal
+      );
+
+      // Se diagnóstico está correto, garantir mínimo 17
+      if (diagnosticoCorreto) {
+        feedback.nota = Math.max(feedback.nota, 17);
+      }
+
+      // Garantir que nota nunca exceda 20
+      feedback.nota = Math.min(feedback.nota, 20);
+
+      // Recalcular percentual baseado em escala 0-20
+      feedback.percentual = Math.round((feedback.nota / 20) * 100);
+
+      // Ajustar classificação baseada na nova escala
+      if (feedback.nota >= 17) {
+        feedback.classificacao = "Excelente";
+      } else if (feedback.nota >= 16) {
+        feedback.classificacao = "Bom";
+      } else if (feedback.nota >= 12) {
+        feedback.classificacao = "Regular";
+      } else {
+        feedback.classificacao = "Insuficiente";
+      }
     } catch (parseError) {
       console.error("Erro ao fazer parse da resposta OpenAI:", respostaRaw);
+      const diagnosticoCorreto = verificarDiagnosticoCompativel(
+        hipoteseDiagnostica,
+        caso.dados_ocultos_do_sistema.diagnostico_principal
+      );
+      const notaBase = diagnosticoCorreto ? 17 : 12;
+
       const feedbackPadrao: FeedbackOSCE = {
-        nota: 6,
-        percentual: 60,
-        classificacao: "Regular",
-        justificativaNota: "Erro ao processar feedback detalhado.",
+        nota: notaBase,
+        percentual: Math.round((notaBase / 20) * 100),
+        classificacao: diagnosticoCorreto ? "Excelente" : "Regular",
+        justificativaNota: diagnosticoCorreto
+          ? "Diagnóstico correto. Erro ao processar feedback detalhado."
+          : "Erro ao processar feedback detalhado.",
         tempoAtendimento,
         resumoCaso: {
           diagnosticoEsperado: caso.dados_ocultos_do_sistema.diagnostico_principal,

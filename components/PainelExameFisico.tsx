@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { ManobraRealizada } from "@/lib/types";
+import BonecoVirtual from "@/components/BonecoVirtual";
+import MenuManobrasBoneco from "@/components/MenuManobrasBoneco";
+import { type Regiao } from "@/data/regioesBoneco";
 
 interface PainelExameFisicoProps {
   caso: any;
@@ -69,6 +72,107 @@ export default function PainelExameFisico({
   });
   const [loadingCategoria, setLoadingCategoria] = useState<string | null>(null);
   const [erroCategoria, setErroCategoria] = useState<string | null>(null);
+
+  // Boneco Virtual
+  const [regiaoSelecionada, setRegiaoSelecionada] = useState<Regiao | null>(null);
+  const [loadingBoneco, setLoadingBoneco] = useState(false);
+
+  const handleManobraBoneco = async (textoManobra: string) => {
+    if (!regiaoSelecionada || !textoManobra) return;
+
+    setLoadingBoneco(true);
+
+    try {
+      // Determinar categoria mais apropriada
+      let categoria: "geral" | "cardiovascular" | "respiratorio" | "abdominal" | "membros" = "geral";
+      const texto = textoManobra.toLowerCase();
+
+      if (
+        texto.includes("ausculta") ||
+        texto.includes("focos") ||
+        texto.includes("ictus") ||
+        texto.includes("fremito") ||
+        texto.includes("pulso") ||
+        texto.includes("carotide") ||
+        texto.includes("jugular")
+      ) {
+        categoria = "cardiovascular";
+      } else if (
+        texto.includes("ausculta") ||
+        texto.includes("percuti") ||
+        texto.includes("frequencia") ||
+        texto.includes("expansion") ||
+        texto.includes("fremito") ||
+        texto.includes("apice") ||
+        texto.includes("base")
+      ) {
+        categoria = "respiratorio";
+      } else if (
+        texto.includes("ausculta") ||
+        texto.includes("palpacao") ||
+        texto.includes("percuti") ||
+        texto.includes("blumberg") ||
+        texto.includes("murphy") ||
+        texto.includes("hidroaereo")
+      ) {
+        categoria = "abdominal";
+      } else if (
+        texto.includes("edema") ||
+        texto.includes("pulso") ||
+        texto.includes("perfusao") ||
+        texto.includes("panturrilha") ||
+        texto.includes("homans")
+      ) {
+        categoria = "membros";
+      }
+
+      // Montar histórico dessa categoria
+      const historicoCategoria = manobrasSolicitadas
+        .filter((m) => m.categoria === categoria)
+        .map((m) => ({
+          textDigitado: m.textDigitado,
+          resposta: m.resposta,
+        }));
+
+      // Chamar API
+      const response = await fetch("/api/exame-fisico", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          casoId: caso.id,
+          categoria,
+          comando: textoManobra,
+          historico: historicoCategoria,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao processar manobra");
+      }
+
+      const data = await response.json();
+      const achado = data.achado || "Não foi possível processar esta manobra.";
+
+      // Marcar como vindo do boneco
+      const descricaoBoneco = `[Boneco Virtual] ${regiaoSelecionada.nome} — ${
+        regiaoSelecionada.manobras.find((m) => m.textoAPI === textoManobra)?.nome || textoManobra
+      }`;
+
+      const novaManobra: ManobraRealizada = {
+        id: `boneco-${Date.now()}`,
+        categoria,
+        textDigitado: descricaoBoneco,
+        resposta: achado,
+        timestamp: new Date(),
+      };
+
+      onNovaManobra(novaManobra);
+    } catch (error) {
+      console.error("Erro ao chamar API de exame físico:", error);
+    } finally {
+      setLoadingBoneco(false);
+    }
+  };
 
   const handleRealizarManobra = async (
     categoria: "geral" | "cardiovascular" | "respiratorio" | "abdominal" | "membros"
@@ -138,6 +242,20 @@ export default function PainelExameFisico({
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
+      {/* Boneco Virtual 2D */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(380px,520px)_minmax(280px,1fr)] gap-6 items-start">
+        <BonecoVirtual
+          onRegiaoSelecionada={setRegiaoSelecionada}
+          regiaoAtiva={regiaoSelecionada?.id}
+          sexoPaciente={caso?.sexo || caso?.dados_visiveis_ao_estudante?.sexo}
+        />
+        <MenuManobrasBoneco
+          regiaoSelecionada={regiaoSelecionada}
+          onManobraClicada={handleManobraBoneco}
+          carregando={loadingBoneco}
+        />
+      </div>
+
       {/* Exame Físico */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-3">

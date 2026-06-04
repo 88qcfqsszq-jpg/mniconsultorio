@@ -383,19 +383,21 @@ INSTRUÇÕES DE AVALIAÇÃO:
    "Não foi registrado" ou "O estudante não..."
    Nunca invente ações que não ocorreram.
 
-3. Calcule nota de 0-10 baseado em:
-   - Qualidade e completude da anamnese (até 2 pontos)
-   - Exame físico dirigido e achados (até 2 pontos)
-   - Sinais vitais (até 0.5 pontos)
-   - Hipótese diagnóstica correta (até 3 pontos)
-   - Exames complementares adequados (até 1.5 pontos)
-   - Conduta segura e adequada (até 1 ponto)
+3. Calcule nota de 0-20 baseado em:
+   - Qualidade e completude da anamnese (até 4 pontos)
+   - Exame físico dirigido e achados (até 4 pontos)
+   - Sinais vitais (até 1 ponto)
+   - Hipótese diagnóstica correta (até 6 pontos) ← PESO PRINCIPAL
+   - Exames complementares adequados (até 3 pontos)
+   - Conduta segura e adequada (até 2 pontos)
+
+REGRA ESPECIAL: Se a hipótese diagnóstica principal do aluno for clinicamente compatível com o diagnóstico esperado do caso, a nota final MÍNIMA OBRIGATÓRIA é 17/20. Mesmo que haja falhas em outras áreas, acertar o diagnóstico garante nota ≥ 17.
 
 4. Classificação:
-   - 9-10: Excelente
-   - 7-8.9: Bom
-   - 5-6.9: Regular
-   - <5: Insuficiente
+   - 0-11.9: Insuficiente
+   - 12-15.9: Regular
+   - 16-16.9: Bom
+   - 17-20: Excelente
 
 5. Análise esperada por seção:
 
@@ -434,10 +436,11 @@ INSTRUÇÕES DE AVALIAÇÃO:
 
 Retorne em JSON válido (sem markdown) com esta estrutura:
 {
-  "nota": <0-10>,
+  "nota": <0-20>,
   "percentual": <0-100>,
   "classificacao": "<Excelente|Bom|Regular|Insuficiente>",
   "justificativaNota": "<uma linha explicando a nota>",
+  "diagnosticoCorreto": <true|false>,
   "resumoCaso": {
     "diagnosticoEsperado": "...",
     "sindromePrincipal": "...",

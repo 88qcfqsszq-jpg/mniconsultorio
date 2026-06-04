@@ -102,9 +102,12 @@ export default function FeedbackOSCE({
         {/* Nota Grande */}
         <div className="mb-6 pb-6 border-b border-slate-200">
           <p className="text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Nota Final</p>
-          <p className={`text-6xl sm:text-7xl font-bold leading-none ${obterCorNota(feedback.classificacao)}`}>
-            {feedback.nota.toFixed(1)}
-          </p>
+          <div className="flex items-baseline gap-2">
+            <p className={`text-6xl sm:text-7xl font-bold leading-none ${obterCorNota(feedback.classificacao)}`}>
+              {feedback.nota.toFixed(1)}
+            </p>
+            <p className="text-2xl font-bold text-slate-600">/ 20</p>
+          </div>
           <p className="text-slate-600 text-sm font-medium mt-2">{feedback.percentual}% de desempenho</p>
         </div>
 
