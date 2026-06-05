@@ -2,6 +2,7 @@
 
 import type { FeedbackOSCE } from "@/lib/types";
 import Link from "next/link";
+import { useState } from "react";
 
 interface FeedbackOSCEProps {
   feedback: FeedbackOSCE;
@@ -14,29 +15,6 @@ const limitar = (items: any[], max: number = 2) => {
   return items.slice(0, max);
 };
 
-const renderBullets = (items: string[], cor: "emerald" | "blue" | "purple" | "amber" | "rose") => {
-  if (!items || items.length === 0) {
-    return <p className="text-sm text-slate-500 italic">Sem destaque</p>;
-  }
-  const colorClass = {
-    emerald: "text-emerald-600",
-    blue: "text-blue-600",
-    purple: "text-purple-600",
-    amber: "text-amber-600",
-    rose: "text-rose-600",
-  }[cor];
-  return (
-    <ul className="space-y-1">
-      {items.map((item, idx) => (
-        <li key={idx} className={`text-sm ${colorClass} flex gap-2`}>
-          <span className="font-bold">•</span>
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
 export default function FeedbackOSCE({
   feedback,
   nomePaciente,
@@ -45,6 +23,7 @@ export default function FeedbackOSCE({
   const minutos = Math.floor(tempoDecorrido / 60);
   const segundos = tempoDecorrido % 60;
   const percentual = Math.round((feedback.nota / 20) * 100);
+  const [trofeuFailed, setTrofeuFailed] = useState(false);
 
   const prioridadesMelhoria = [
     ...(feedback.raciocinioDiagnostico?.diferenciaisFaltantes || []),
@@ -65,318 +44,289 @@ export default function FeedbackOSCE({
 
   const isAprovado = feedback.nota >= 17;
 
-  // Mapeamento de cores para as 6 competências da nova rubrica
+  // Cores para cada competência
   const competenciasCores = [
-    { nome: "💬 Comunicação", bg: "bg-blue-50", border: "border-blue-200", header: "text-blue-900", icon: "bg-blue-100 text-blue-600" },
-    { nome: "📋 Anamnese", bg: "bg-purple-50", border: "border-purple-200", header: "text-purple-900", icon: "bg-purple-100 text-purple-600" },
-    { nome: "🫁 Exame Físico", bg: "bg-green-50", border: "border-green-200", header: "text-green-900", icon: "bg-green-100 text-green-600" },
-    { nome: "🔬 Exames", bg: "bg-amber-50", border: "border-amber-200", header: "text-amber-900", icon: "bg-amber-100 text-amber-600" },
-    { nome: "🧠 Raciocínio", bg: "bg-orange-50", border: "border-orange-200", header: "text-orange-900", icon: "bg-orange-100 text-orange-600" },
-    { nome: "❤️ Conduta", bg: "bg-rose-50", border: "border-rose-200", header: "text-rose-900", icon: "bg-rose-100 text-rose-600" },
+    { cor: "blue", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-900", icon: "💬" },
+    { cor: "cyan", bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-900", icon: "📋" },
+    { cor: "violet", bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-900", icon: "🫁" },
+    { cor: "emerald", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-900", icon: "🔬" },
+    { cor: "amber", bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-900", icon: "🧠" },
+    { cor: "rose", bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-900", icon: "❤️" },
   ];
 
-  return (
-    <main className="w-full bg-slate-50 min-h-screen p-4 md:p-8">
-      <div className="w-full max-w-none space-y-8">
-        {/* CARD PRINCIPAL */}
-        <section className="w-full rounded-3xl bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white shadow-xl border border-blue-900/40 p-8 md:p-10 xl:p-12">
+  const obterCorTexto = (cor: string) => {
+    const cores: Record<string, string> = {
+      blue: "text-blue-700",
+      cyan: "text-cyan-700",
+      violet: "text-violet-700",
+      emerald: "text-emerald-700",
+      amber: "text-amber-700",
+      rose: "text-rose-700",
+    };
+    return cores[cor] || "text-blue-700";
+  };
 
+  const obterCorFundo = (cor: string) => {
+    const cores: Record<string, string> = {
+      blue: "bg-blue-200",
+      cyan: "bg-cyan-200",
+      violet: "bg-violet-200",
+      emerald: "bg-emerald-200",
+      amber: "bg-amber-200",
+      rose: "bg-rose-200",
+    };
+    return cores[cor] || "bg-blue-200";
+  };
+
+  return (
+    <main className="w-full min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full max-w-none space-y-6">
+        {/* CARD PRINCIPAL AZUL */}
+        <section className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 px-8 py-10 text-white shadow-xl border border-blue-900/40">
           {/* TÍTULO */}
-          <div className="mb-8">
+          <div className="mb-10">
             <h1 className="text-4xl md:text-5xl font-black text-white">
               Feedback do Atendimento
             </h1>
-            <p className="mt-2 text-base md:text-lg text-blue-100">
+            <p className="mt-3 text-base md:text-lg text-blue-100">
               {nomePaciente} • {minutos}m {segundos}s
             </p>
           </div>
 
-          {/* GRID: 3 COLUNAS - Nota | Diagnóstico | Troféu */}
-          <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)_280px] gap-10 items-stretch">
-
-            {/* COLUNA 1: NOTA FINAL */}
-            <div className="rounded-3xl bg-white/10 border border-white/10 p-6 flex flex-col justify-center">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-200">
+          {/* GRID: 4 ÁREAS */}
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-[260px_220px_minmax(0,1fr)_300px] xl:items-center">
+            {/* ÁREA 1: NOTA */}
+            <div className="flex flex-col justify-center">
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-blue-200">
                 Nota final
               </p>
 
               <div className="mt-4 flex items-end gap-2">
-                <span className="text-6xl md:text-7xl font-black leading-none">
+                <span className="text-7xl font-black leading-none text-white">
                   {feedback.nota.toFixed(1)}
                 </span>
-                <span className="mb-2 text-2xl font-bold text-blue-200">
+                <span className="mb-2 text-3xl font-bold text-blue-200">
                   /20
                 </span>
               </div>
 
-              <div className="mt-5 inline-flex w-fit rounded-full bg-emerald-500 px-5 py-2 text-lg font-bold text-white">
+              <div className="mt-5 inline-flex w-fit rounded-full bg-emerald-500 px-5 py-2 text-lg font-black text-white shadow-lg">
                 {percentual}% de desempenho
               </div>
             </div>
 
-            {/* COLUNA 2: DIAGNÓSTICO - A MAIOR */}
-            <div className="min-w-0 rounded-3xl bg-white/10 border border-white/10 p-6 md:p-8">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-200">
+            {/* ÁREA 2: GRÁFICO CIRCULAR */}
+            <div className="flex items-center justify-center">
+              <div className="relative h-40 w-40">
+                <svg viewBox="0 0 120 120" className="h-40 w-40">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="48"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.18)"
+                    strokeWidth="14"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="48"
+                    fill="none"
+                    stroke="#22d3ee"
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(percentual / 100) * 301} 301`}
+                    transform="rotate(-90 60 60)"
+                  />
+                </svg>
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-black text-white">
+                    {percentual}%
+                  </span>
+                  <span className="text-sm font-semibold text-blue-200">
+                    Desempenho
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ÁREA 3: DIAGNÓSTICO */}
+            <div className="min-w-0">
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-blue-200">
                 Diagnóstico esperado
               </p>
 
-              <p className="mt-3 text-3xl md:text-4xl xl:text-5xl font-black leading-tight text-white break-words whitespace-normal">
+              <h2 className="mt-3 text-4xl font-black leading-tight text-white xl:text-5xl break-words whitespace-normal">
                 {feedback.resumoCaso?.diagnosticoEsperado || "Diagnóstico não informado"}
+              </h2>
+
+              <p className="mt-5 text-sm font-bold uppercase tracking-[0.25em] text-blue-200">
+                Diagnóstico informado
               </p>
 
-              <div className="mt-6">
-                <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-200">
-                  Diagnóstico informado
-                </p>
-                <p className="mt-2 text-lg md:text-xl font-semibold leading-relaxed text-blue-100 break-words whitespace-normal">
-                  {feedback.resumoCaso?.diagnosticoEsperado || "Não informado"}
-                </p>
-              </div>
+              <p className="mt-2 text-lg font-semibold leading-relaxed text-blue-100 break-words whitespace-normal">
+                {feedback.resumoCaso?.diagnosticoEsperado || "Não informado"}
+              </p>
 
               {feedback.justificativaNota && (
-                <div className="mt-6 rounded-2xl bg-slate-950/30 border border-white/10 px-5 py-4">
-                  <p className="text-base md:text-lg leading-relaxed text-blue-50 whitespace-normal">
-                    💡 {feedback.justificativaNota}
-                  </p>
+                <div className="mt-5 rounded-2xl bg-blue-900/50 px-5 py-4 text-base font-medium leading-relaxed text-blue-50">
+                  {feedback.justificativaNota}
                 </div>
               )}
             </div>
 
-            {/* COLUNA 3: ESTETOSCÓPIO/CLASSIFICAÇÃO */}
-            <div className="rounded-3xl bg-white/10 border border-white/10 p-6 flex flex-col items-center justify-center text-center">
-              <div className="text-7xl md:text-8xl leading-none animate-bounce" style={{ animationDuration: "2s", filter: "drop-shadow(0 0 20px #fbbf24) drop-shadow(0 0 40px #f59e0b)" }}>
-                🩺
+            {/* ÁREA 4: TROFÉU */}
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative flex h-48 w-full items-center justify-center">
+                {!trofeuFailed && (
+                  <img
+                    src="/images/feedback/trofeu-aprovado.png"
+                    alt="Troféu de aprovação"
+                    className="h-40 w-40 object-contain drop-shadow-xl"
+                    onError={() => setTrofeuFailed(true)}
+                  />
+                )}
+                {trofeuFailed && (
+                  <div className="text-8xl drop-shadow-xl">🏆</div>
+                )}
               </div>
 
               {isAprovado && (
-                <div className="mt-6 inline-flex items-center gap-3 rounded-full bg-emerald-500 px-6 py-3 text-2xl font-black text-white shadow-lg">
+                <div className="mt-4 inline-flex items-center gap-3 rounded-full bg-emerald-500 px-8 py-4 text-3xl font-black text-white shadow-lg">
                   <span>✓</span>
                   <span>{feedback.classificacao || "Aprovado"}</span>
                 </div>
               )}
             </div>
-
           </div>
         </section>
 
-        {/* SEÇÃO: DESEMPENHO POR COMPETÊNCIA - NOVA RUBRICA (6 competências) */}
+        {/* DESEMPENHO POR COMPETÊNCIA */}
         <div>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="text-3xl">🎯</div>
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900">Desempenho por Competência</h2>
-              <p className="text-slate-600 text-sm">Avaliação em 6 competências (total 20 pontos)</p>
-            </div>
+          <div className="mb-8">
+            <h2 className="text-3xl font-black text-slate-900">Desempenho por Competência</h2>
+            <p className="mt-2 text-base text-slate-600">Veja onde você foi bem e quais pontos priorizar no próximo atendimento.</p>
           </div>
 
           {feedback.rubricaAvaliacao && feedback.rubricaAvaliacao.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
               {feedback.rubricaAvaliacao.map((competencia, idx) => {
                 const cores = competenciasCores[idx] || competenciasCores[0];
+                const percentualComp = Math.round((competencia.pontosObtidos / competencia.pontosMaximos) * 100);
+
                 return (
-                  <div key={idx} className={`${cores.bg} rounded-2xl shadow-sm border ${cores.border} p-5`}>
-                    <div className="flex items-start justify-between gap-2 mb-4">
-                      <h3 className={`text-lg font-bold ${cores.header}`}>
-                        {competencia.nome}
-                      </h3>
-                      <div className={`${cores.icon} rounded-lg px-2 py-1 text-xs font-bold whitespace-nowrap`}>
-                        {competencia.pontosObtidos}/{competencia.pontosMaximos}
+                  <div key={idx} className={`${cores.bg} rounded-3xl border ${cores.border} p-6 shadow-sm min-h-[260px]`}>
+                    {/* CABEÇALHO */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+                          {cores.icon}
+                        </div>
+                        <h3 className={`text-xl font-black ${cores.text}`}>
+                          {competencia.nome}
+                        </h3>
                       </div>
+
+                      <span className={`rounded-xl bg-white/70 px-3 py-1 text-sm font-black ${cores.text}`}>
+                        {competencia.pontosObtidos}/{competencia.pontosMaximos}
+                      </span>
                     </div>
 
-                    <div className="space-y-3">
-                      {competencia.acertos.length > 0 && (
-                        <div>
-                          <p className="text-sm font-bold text-emerald-600 mb-2">Acertos</p>
-                          {renderBullets(limitar(competencia.acertos, 2), "emerald")}
-                        </div>
-                      )}
-                      {competencia.melhorias.length > 0 && (
-                        <div className={competencia.acertos.length > 0 ? "border-t pt-3" : ""}>
-                          <p className="text-sm font-bold text-slate-600 mb-2">Melhorias</p>
-                          {renderBullets(limitar(competencia.melhorias, 2), "blue")}
-                        </div>
-                      )}
+                    {/* BARRA DE PROGRESSO */}
+                    <div className="h-2 rounded-full bg-white/80 overflow-hidden">
+                      <div
+                        className={`h-2 rounded-full transition-all ${obterCorFundo(cores.cor)}`}
+                        style={{ width: `${percentualComp}%` }}
+                      />
                     </div>
+
+                    {/* ACERTOS */}
+                    {competencia.acertos.length > 0 && (
+                      <div>
+                        <p className={`mt-5 text-sm font-black ${cores.text}`}>Acertos</p>
+                        <ul className="mt-2 space-y-1 text-sm leading-relaxed text-slate-700">
+                          {limitar(competencia.acertos, 2).map((item, i) => (
+                            <li key={i}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* MELHORIAS */}
+                    {competencia.melhorias.length > 0 && (
+                      <div>
+                        <p className={`mt-4 text-sm font-black ${obterCorTexto(cores.cor)}`}>Melhorar</p>
+                        <ul className="mt-2 space-y-1 text-sm leading-relaxed text-slate-700">
+                          {limitar(competencia.melhorias, 2).map((item, i) => (
+                            <li key={i}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
-          ) : (
-            // Fallback para layout antigo se não houver rubricaAvaliacao
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* Comunicação */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-bold text-blue-900">Comunicação</h3>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-bold text-emerald-600 mb-2">Acertos</p>
-                    {renderBullets(limitar(feedback.comunicacaoMedica?.acertos || [], 2), "emerald")}
-                  </div>
-                  {(feedback.comunicacaoMedica?.pontosDeMelhoria?.length || 0) > 0 && (
-                    <div className="border-t pt-3">
-                      <p className="text-sm font-bold text-blue-600 mb-2">Melhorar</p>
-                      {renderBullets(limitar(feedback.comunicacaoMedica?.pontosDeMelhoria || [], 2), "blue")}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Exame Físico */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-lg">
-                    🫁
-                  </div>
-                  <h3 className="text-lg font-bold text-purple-900">Exame Físico</h3>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-bold text-emerald-600 mb-2">Acertos</p>
-                    {renderBullets(limitar(feedback.exameFisico?.manobrasRealizadas || [], 2), "emerald")}
-                  </div>
-                  {(feedback.exameFisico?.manobrasEsquecidas?.length || 0) > 0 && (
-                    <div className="border-t pt-3">
-                      <p className="text-sm font-bold text-purple-600 mb-2">Melhorar</p>
-                      {renderBullets(limitar(feedback.exameFisico?.manobrasEsquecidas || [], 2), "purple")}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Exames */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-lg">
-                    🔬
-                  </div>
-                  <h3 className="text-lg font-bold text-emerald-900">Exames</h3>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-bold text-emerald-600 mb-2">Acertos</p>
-                    {renderBullets(limitar(feedback.examesComplementares?.adequados || [], 2), "emerald")}
-                  </div>
-                  {(feedback.examesComplementares?.faltantes?.length || 0) > 0 && (
-                    <div className="border-t pt-3">
-                      <p className="text-sm font-bold text-emerald-600 mb-2">Melhorar</p>
-                      {renderBullets(limitar(feedback.examesComplementares?.faltantes || [], 2), "emerald")}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Raciocínio */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-lg">
-                    🧠
-                  </div>
-                  <h3 className="text-lg font-bold text-amber-900">Raciocínio</h3>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-bold text-emerald-600 mb-2">Acertos</p>
-                    {feedback.raciocinioDiagnostico?.hipoteseDoEstudante ? (
-                      <p className="text-sm text-slate-700">{feedback.raciocinioDiagnostico.hipoteseDoEstudante}</p>
-                    ) : (
-                      <p className="text-sm text-slate-500">—</p>
-                    )}
-                  </div>
-                  {(feedback.raciocinioDiagnostico?.diferenciaisFaltantes?.length || 0) > 0 && (
-                    <div className="border-t pt-3">
-                      <p className="text-sm font-bold text-amber-600 mb-2">Melhorar</p>
-                      {renderBullets(limitar(feedback.raciocinioDiagnostico?.diferenciaisFaltantes || [], 2), "amber")}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Conduta */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-rose-600" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-bold text-rose-900">Conduta</h3>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-bold text-emerald-600 mb-2">Acertos</p>
-                    {renderBullets(limitar(feedback.conduta?.adequada || [], 2), "emerald")}
-                  </div>
-                  {(feedback.conduta?.erros?.length || 0) > 0 && (
-                    <div className="border-t pt-3">
-                      <p className="text-sm font-bold text-rose-600 mb-2">Melhorar</p>
-                      {renderBullets(limitar(feedback.conduta?.erros || [], 2), "rose")}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
 
-        {/* CARDS INFERIORES */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* BLOCOS INFERIORES */}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          {/* PRIORIDADES */}
           {prioridadesMelhoria.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">⭐</span>
-                <h3 className="text-xl font-bold text-slate-900">Prioridades de melhoria</h3>
+            <div className="rounded-3xl border border-amber-200 bg-amber-50 p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl">⭐</span>
+                <h3 className="text-2xl font-black text-amber-900">Prioridades de melhoria</h3>
               </div>
               <ol className="space-y-3">
                 {prioridadesMelhoria.map((item, idx) => (
-                  <li key={idx} className="text-sm text-slate-700 flex gap-3">
-                    <span className="font-bold text-amber-600">{idx + 1}</span>
-                    <span>{item}</span>
+                  <li key={idx} className="flex items-start gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-200 font-black text-amber-900 shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="text-base font-medium text-slate-700 pt-0.5">{item}</span>
                   </li>
                 ))}
               </ol>
             </div>
           )}
 
+          {/* SEQUÊNCIA IDEAL */}
           {sequenciaIdeal.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-slate-900">Sequência ideal neste caso</h3>
+            <div className="rounded-3xl border border-blue-200 bg-white p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl">📋</span>
+                <h3 className="text-2xl font-black text-blue-900">Sequência ideal neste caso</h3>
               </div>
               <ol className="space-y-3">
                 {sequenciaIdeal.map((item, idx) => (
-                  <li key={idx} className="text-sm text-slate-700 flex gap-3">
-                    <span className="font-bold text-blue-600">{idx + 1}</span>
-                    <span>{item.replace(/^\d+\.\s*/, "")}</span>
+                  <li key={idx} className="flex items-start gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-200 font-black text-blue-900 shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="text-base font-medium text-slate-700 pt-0.5">
+                      {typeof item === "string" ? item.replace(/^\d+\.\s*/, "") : item}
+                    </span>
                   </li>
                 ))}
               </ol>
             </div>
           )}
 
+          {/* PRÓXIMOS FOCOS */}
           {planoEstudo.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">📚</span>
-                <h3 className="text-xl font-bold text-slate-900">Próximos focos de estudo</h3>
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl">🎓</span>
+                <h3 className="text-2xl font-black text-emerald-900">Próximos focos de estudo</h3>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {planoEstudo.map((item, idx) => {
                   const topico = typeof item === "string" ? item : item.topico;
                   return (
-                    <span key={idx} className="inline-block bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium border border-emerald-200">
+                    <span key={idx} className="inline-flex rounded-full bg-white px-4 py-2 text-base font-bold text-emerald-800 border border-emerald-200 shadow-sm">
                       {topico}
                     </span>
                   );
@@ -386,16 +336,16 @@ export default function FeedbackOSCE({
           )}
         </div>
 
-        {/* AÇÕES FINAIS */}
-        <div className="flex gap-4 pt-4">
+        {/* BOTÕES FINAIS */}
+        <div className="flex gap-4 pt-6">
           <Link href="/" className="flex-1">
-            <button className="w-full bg-white hover:bg-slate-50 border-2 border-slate-300 text-slate-900 font-bold py-3 px-6 rounded-xl transition-all text-base active:scale-[0.98]">
+            <button className="w-full rounded-2xl border-2 border-slate-300 bg-white px-6 py-4 text-base font-black text-slate-900 transition-all hover:bg-slate-50 active:scale-[0.98]">
               ← Voltar ao início
             </button>
           </Link>
           <button
             onClick={() => window.location.reload()}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all text-base active:scale-[0.98]"
+            className="flex-1 rounded-2xl bg-blue-600 px-6 py-4 text-base font-black text-white transition-all hover:bg-blue-700 active:scale-[0.98] shadow-lg"
           >
             🔄 Tentar novo caso
           </button>
