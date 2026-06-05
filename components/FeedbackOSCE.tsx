@@ -65,6 +65,16 @@ export default function FeedbackOSCE({
 
   const isAprovado = feedback.nota >= 17;
 
+  // Mapeamento de cores para as 6 competências da nova rubrica
+  const competenciasCores = [
+    { nome: "💬 Comunicação", bg: "bg-blue-50", border: "border-blue-200", header: "text-blue-900", icon: "bg-blue-100 text-blue-600" },
+    { nome: "📋 Anamnese", bg: "bg-purple-50", border: "border-purple-200", header: "text-purple-900", icon: "bg-purple-100 text-purple-600" },
+    { nome: "🫁 Exame Físico", bg: "bg-green-50", border: "border-green-200", header: "text-green-900", icon: "bg-green-100 text-green-600" },
+    { nome: "🔬 Exames", bg: "bg-amber-50", border: "border-amber-200", header: "text-amber-900", icon: "bg-amber-100 text-amber-600" },
+    { nome: "🧠 Raciocínio", bg: "bg-orange-50", border: "border-orange-200", header: "text-orange-900", icon: "bg-orange-100 text-orange-600" },
+    { nome: "❤️ Conduta", bg: "bg-rose-50", border: "border-rose-200", header: "text-rose-900", icon: "bg-rose-100 text-rose-600" },
+  ];
+
   return (
     <main className="w-full bg-slate-50 min-h-screen p-4 md:p-8">
       <div className="w-full max-w-none space-y-8">
@@ -149,80 +159,51 @@ export default function FeedbackOSCE({
           </div>
         </section>
 
-        {/* SEÇÃO: DESEMPENHO POR COMPETÊNCIA - Nova Rubrica */}
+        {/* SEÇÃO: DESEMPENHO POR COMPETÊNCIA - NOVA RUBRICA (6 competências) */}
         <div>
           <div className="flex items-center gap-3 mb-6">
             <div className="text-3xl">🎯</div>
             <div>
               <h2 className="text-3xl font-bold text-slate-900">Desempenho por Competência</h2>
-              <p className="text-slate-600 text-sm">Avaliação baseada em 6 competências (total 20 pontos)</p>
+              <p className="text-slate-600 text-sm">Avaliação em 6 competências (total 20 pontos)</p>
             </div>
           </div>
 
           {feedback.rubricaAvaliacao && feedback.rubricaAvaliacao.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {feedback.rubricaAvaliacao.map((competencia, idx) => {
-                const colorClasses = [
-                  { bg: "bg-blue-50", border: "border-blue-200", header: "text-blue-900", icon: "bg-blue-100 text-blue-600" },
-                  { bg: "bg-purple-50", border: "border-purple-200", header: "text-purple-900", icon: "bg-purple-100 text-purple-600" },
-                  { bg: "bg-green-50", border: "border-green-200", header: "text-green-900", icon: "bg-green-100 text-green-600" },
-                  { bg: "bg-amber-50", border: "border-amber-200", header: "text-amber-900", icon: "bg-amber-100 text-amber-600" },
-                  { bg: "bg-orange-50", border: "border-orange-200", header: "text-orange-900", icon: "bg-orange-100 text-orange-600" },
-                  { bg: "bg-rose-50", border: "border-rose-200", header: "text-rose-900", icon: "bg-rose-100 text-rose-600" },
-                ][idx] || { bg: "bg-slate-50", border: "border-slate-200", header: "text-slate-900", icon: "bg-slate-100 text-slate-600" };
-
+                const cores = competenciasCores[idx] || competenciasCores[0];
                 return (
-                  <div key={idx} className={`${colorClasses.bg} rounded-2xl border ${colorClasses.border} p-6`}>
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className={`text-lg font-bold ${colorClasses.header}`}>
-                          {competencia.nome}
-                        </h3>
-                      </div>
-                      <div className={`${colorClasses.icon} rounded-lg px-3 py-1 text-sm font-bold`}>
+                  <div key={idx} className={`${cores.bg} rounded-2xl shadow-sm border ${cores.border} p-5`}>
+                    <div className="flex items-start justify-between gap-2 mb-4">
+                      <h3 className={`text-lg font-bold ${cores.header}`}>
+                        {competencia.nome}
+                      </h3>
+                      <div className={`${cores.icon} rounded-lg px-2 py-1 text-xs font-bold whitespace-nowrap`}>
                         {competencia.pontosObtidos}/{competencia.pontosMaximos}
                       </div>
                     </div>
 
-                    {/* Barra de progresso */}
-                    <div className="mb-4">
-                      <div className="w-full bg-white rounded-full h-2 overflow-hidden border border-slate-200">
-                        <div
-                          className={`h-full transition-all ${
-                            competencia.pontosObtidos >= competencia.pontosMaximos * 0.8
-                              ? "bg-emerald-500"
-                              : competencia.pontosObtidos >= competencia.pontosMaximos * 0.5
-                              ? "bg-amber-500"
-                              : "bg-rose-500"
-                          }`}
-                          style={{
-                            width: `${(competencia.pontosObtidos / competencia.pontosMaximos) * 100}%`,
-                          }}
-                        />
-                      </div>
+                    <div className="space-y-3">
+                      {competencia.acertos.length > 0 && (
+                        <div>
+                          <p className="text-sm font-bold text-emerald-600 mb-2">Acertos</p>
+                          {renderBullets(limitar(competencia.acertos, 2), "emerald")}
+                        </div>
+                      )}
+                      {competencia.melhorias.length > 0 && (
+                        <div className={competencia.acertos.length > 0 ? "border-t pt-3" : ""}>
+                          <p className="text-sm font-bold text-slate-600 mb-2">Melhorias</p>
+                          {renderBullets(limitar(competencia.melhorias, 2), "blue")}
+                        </div>
+                      )}
                     </div>
-
-                    {/* Acertos */}
-                    {competencia.acertos.length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-xs font-bold text-emerald-600 mb-2">Acertos</p>
-                        {renderBullets(limitar(competencia.acertos, 2), "emerald")}
-                      </div>
-                    )}
-
-                    {/* Melhorias */}
-                    {competencia.melhorias.length > 0 && (
-                      <div className="border-t pt-3">
-                        <p className="text-xs font-bold text-slate-600 mb-2">Melhorias</p>
-                        {renderBullets(limitar(competencia.melhorias, 2), "blue")}
-                      </div>
-                    )}
                   </div>
                 );
               })}
             </div>
           ) : (
-            /* Fallback: mostrar seções antigas se rubricaAvaliacao não existir */
+            // Fallback para layout antigo se não houver rubricaAvaliacao
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Comunicação */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
