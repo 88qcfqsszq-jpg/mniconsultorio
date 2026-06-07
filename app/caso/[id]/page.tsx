@@ -242,6 +242,7 @@ function CasoPageContent() {
             feedback={feedback}
             nomePaciente={caso.paciente.nome}
             tempoDecorrido={tempoDecorrido}
+            caso={caso}
           />
         </div>
       </div>

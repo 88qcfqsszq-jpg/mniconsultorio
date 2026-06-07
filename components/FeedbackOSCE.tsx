@@ -2,12 +2,13 @@
 
 import type { FeedbackOSCE } from "@/lib/types";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface FeedbackOSCEProps {
   feedback: FeedbackOSCE;
   nomePaciente: string;
   tempoDecorrido: number;
+  caso?: any;
 }
 
 const limitar = (items: any[], max: number = 2) => {
@@ -81,6 +82,7 @@ export default function FeedbackOSCE({
   feedback,
   nomePaciente,
   tempoDecorrido,
+  caso,
 }: FeedbackOSCEProps) {
   const minutos = Math.floor(tempoDecorrido / 60);
   const segundos = tempoDecorrido % 60;
@@ -88,106 +90,50 @@ export default function FeedbackOSCE({
   const [trofeuFailed, setTrofeuFailed] = useState(false);
   const [rubricaAberta, setRubricaAberta] = useState<string | null>(null);
   const [estudoExpandido, setEstudoExpandido] = useState(false);
-
+  const [estudoFinal, setEstudoFinal] = useState<any | null>(null);
+  const [carregandoEstudoFinal, setCarregandoEstudoFinal] = useState(false);
+  const [erroEstudoFinal, setErroEstudoFinal] = useState<string | null>(null);
 
   const isAprovado = feedback.nota >= 17;
 
-  function estudoPneumoniaAtipica() {
-    return [
-      {
-        titulo: "1. Reconhecimento do quadro clínico",
-        texto: "A pneumonia atípica por provável Mycoplasma pneumoniae costuma ter início mais arrastado, com tosse seca ou pouco produtiva, febre baixa ou moderada, cefaleia, dor de garganta, mal-estar e mialgia. O paciente pode parecer menos toxêmico do que em uma pneumonia bacteriana típica, e a ausculta pode ser pouco exuberante. A principal armadilha é descartar pneumonia apenas porque o exame físico parece discreto.",
-      },
-      {
-        titulo: "2. Anamnese dirigida",
-        texto: "A anamnese deve caracterizar duração da tosse, tipo de tosse, presença de febre, dispneia, dor torácica, sintomas sistêmicos e evolução temporal. É importante perguntar sobre contato com pessoas doentes, surtos em escola, faculdade ou trabalho, além de investigar contato com tuberculose, perda ponderal, sudorese noturna e hemoptise. Também devem ser pesquisados antecedentes respiratórios, cardiopatias, imunossupressão, uso de medicamentos, alergias, tabagismo e vacinação quando pertinente.",
-      },
-      {
-        titulo: "3. Avaliação de gravidade",
-        texto: "Antes de definir tratamento ambulatorial, o médico deve avaliar gravidade. Devem ser verificados estado geral, nível de consciência, pressão arterial, frequência cardíaca, frequência respiratória, temperatura e saturação de oxigênio. Sinais como SpO2 baixa, taquipneia importante, hipotensão, confusão mental, uso de musculatura acessória, cianose, incapacidade de ingerir líquidos ou comorbidades graves indicam maior risco e podem exigir atendimento hospitalar.",
-      },
-      {
-        titulo: "4. Exame físico esperado",
-        texto: "O exame físico deve incluir sinais vitais completos, inspeção respiratória, avaliação do esforço ventilatório, expansibilidade torácica, palpação quando pertinente, percussão pulmonar e ausculta pulmonar anterior e posterior. Na pneumonia atípica, podem existir estertores finos, roncos, sibilos ou murmúrio vesicular reduzido, mas o exame pode ser discreto. Também é útil avaliar hidratação, perfusão periférica e ausculta cardíaca.",
-      },
-      {
-        titulo: "5. Exames complementares",
-        texto: "Em uma suspeita de pneumonia, o exame essencial é a radiografia de tórax, que pode mostrar infiltrado intersticial, broncopneumônico ou padrão compatível com pneumonia. Hemograma e marcadores inflamatórios podem ajudar na avaliação, embora não definam isoladamente o agente etiológico. Em casos graves ou com hipoxemia, considerar gasometria, função renal, eletrólitos e outros exames conforme o quadro. Testes específicos para Mycoplasma podem ser considerados em situações selecionadas, mas na prática o tratamento muitas vezes é empírico.",
-      },
-      {
-        titulo: "6. Diagnóstico principal",
-        texto: "O diagnóstico deve ser formulado de forma clara: pneumonia atípica adquirida na comunidade, provavelmente por Mycoplasma pneumoniae. A justificativa deve integrar tosse persistente, febre, sintomas sistêmicos leves a moderados, possível contato respiratório, exame físico pouco exuberante e radiografia compatível.",
-      },
-      {
-        titulo: "7. Diagnósticos diferenciais",
-        texto: "Os diferenciais devem ser plausíveis para o quadro. Em pneumonia atípica, bons diferenciais incluem tuberculose pulmonar, pneumonia bacteriana típica, virose respiratória, influenza, COVID, bronquite aguda, asma ou broncoespasmo quando houver sibilância e tromboembolismo pulmonar se houver dispneia súbita ou dor pleurítica importante. Tuberculose é um diferencial válido principalmente diante de tosse prolongada, perda de peso, sudorese noturna, hemoptise ou contato epidemiológico.",
-      },
-      {
-        titulo: "8. Conduta terapêutica",
-        texto: "Em paciente estável e sem sinais de gravidade, a conduta pode ser ambulatorial. Deve-se iniciar antibioticoterapia com cobertura para germes atípicos, como macrolídeo ou doxiciclina, conforme idade, perfil clínico, contraindicações e protocolos locais. Também devem ser orientados hidratação, repouso relativo, antitérmico ou analgésico se necessário e reavaliação clínica. Em pacientes com comorbidades, gravidade ou risco aumentado, considerar cobertura mais ampla e possível internação.",
-      },
-      {
-        titulo: "9. Sinais de alarme e retorno",
-        texto: "A orientação de segurança é parte essencial da conduta. O paciente deve retornar ou procurar emergência se houver piora da falta de ar, febre persistente ou piora após 48 a 72 horas, dor torácica intensa, confusão mental, prostração importante, queda da saturação, cianose, vômitos persistentes, incapacidade de ingerir líquidos, desmaio, hemoptise ou piora do estado geral.",
-      },
-      {
-        titulo: "10. Seguimento",
-        texto: "O seguimento deve incluir reavaliação em 48 a 72 horas ou antes se houver piora. O médico deve verificar melhora da febre, dispneia, estado geral e tolerância ao tratamento. Se não houver melhora, deve reconsiderar diagnóstico, adesão, resistência, complicações, tuberculose ou necessidade de internação. A tosse pode persistir por semanas, mas a piora clínica ou ausência de resposta exige reavaliação.",
-      },
-      {
-        titulo: "Resposta modelo para o aluno",
-        texto: "Diagnóstico principal: pneumonia atípica adquirida na comunidade, provavelmente por Mycoplasma pneumoniae. Diferenciais: tuberculose pulmonar, pneumonia bacteriana típica e virose respiratória/influenza/COVID. Conduta: paciente estável, sem sinais de gravidade no momento. Indico tratamento ambulatorial com antibioticoterapia com cobertura para germes atípicos, como macrolídeo ou doxiciclina conforme perfil e contraindicações. Solicito ou avalio radiografia de tórax e hemograma, mantenho hidratação, antitérmico ou analgésico se necessário e repouso relativo. Oriento retorno em 48 a 72 horas para reavaliação, ou antes se houver piora da dispneia, febre persistente, dor torácica, confusão mental, prostração importante, queda da saturação, vômitos persistentes ou piora do estado geral. Se houver tosse prolongada, perda ponderal, sudorese noturna, hemoptise ou contato com tuberculose, investigar TB com exames específicos.",
-      },
-    ];
-  }
+  useEffect(() => {
+    async function carregarEstudoFinal() {
+      try {
+        setCarregandoEstudoFinal(true);
+        setErroEstudoFinal(null);
 
-  function estudoGenericoDoCaso() {
-    return [
-      {
-        titulo: "1. Organização inicial do atendimento",
-        texto: "O atendimento deve começar com comunicação adequada: apresentar-se, confirmar a identidade do paciente, explicar o que será feito e pedir consentimento. Em seguida, o médico deve organizar a consulta em anamnese, exame físico, exames complementares, raciocínio diagnóstico e conduta.",
-      },
-      {
-        titulo: "2. Anamnese dirigida",
-        texto: "A anamnese deve explorar a queixa principal, início, duração, evolução, fatores de melhora e piora, sintomas associados, sinais de gravidade, antecedentes, medicamentos, alergias, hábitos e contexto epidemiológico ou familiar quando pertinente.",
-      },
-      {
-        titulo: "3. Exame físico direcionado",
-        texto: "O exame físico deve começar pelos sinais vitais e seguir para o exame direcionado ao sistema acometido. O aluno deve demonstrar técnica, sequência lógica e relação entre os achados físicos e as hipóteses diagnósticas.",
-      },
-      {
-        titulo: "4. Exames complementares",
-        texto: "Os exames devem ser solicitados de forma justificada, buscando confirmar a hipótese principal, avaliar gravidade, identificar complicações e excluir diagnósticos diferenciais importantes.",
-      },
-      {
-        titulo: "5. Raciocínio diagnóstico",
-        texto: "O raciocínio deve apresentar o diagnóstico principal, justificar com dados da história, exame físico e exames complementares, além de citar diferenciais plausíveis para o quadro.",
-      },
-      {
-        titulo: "6. Conduta",
-        texto: "A conduta deve incluir tratamento inicial, orientações ao paciente, sinais de alarme, necessidade de retorno, encaminhamento ou internação quando indicado, sempre de acordo com a gravidade do caso.",
-      },
-    ];
-  }
+        const response = await fetch("/api/estudo-final-caso", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            caso,
+            feedback,
+            rubricaAvaliacao: feedback?.rubricaAvaliacao,
+            diagnosticoEsperado: feedback?.resumoCaso?.diagnosticoEsperado,
+            diagnosticoInformado: feedback?.resumoCaso?.diagnosticoEsperado,
+          }),
+        });
 
-  function gerarEstudoFinalDoCaso(fb: FeedbackOSCE) {
-    const diagnostico = String(
-      fb?.resumoCaso?.diagnosticoEsperado ||
-      ""
-    ).toLowerCase();
+        if (!response.ok) {
+          throw new Error("Erro ao gerar estudo final do caso");
+        }
 
-    if (
-      diagnostico.includes("pneumonia atípica") ||
-      diagnostico.includes("mycoplasma") ||
-      diagnostico.includes("mycoplasma pneumoniae")
-    ) {
-      return estudoPneumoniaAtipica();
+        const data = await response.json();
+        setEstudoFinal(data);
+      } catch (error) {
+        console.error("Erro ao carregar estudo final:", error);
+        setErroEstudoFinal("Não foi possível gerar o estudo final individualizado agora.");
+      } finally {
+        setCarregandoEstudoFinal(false);
+      }
     }
 
-    return estudoGenericoDoCaso();
-  }
-
-  const estudoFinal = gerarEstudoFinalDoCaso(feedback);
+    if (feedback) {
+      carregarEstudoFinal();
+    }
+  }, [feedback, caso]);
 
   // Assets dos cards
   const assetsCards = [
@@ -551,7 +497,7 @@ export default function FeedbackOSCE({
 
               <div className="flex items-start justify-between gap-3 mt-2">
                 <h2 className="text-3xl font-black text-slate-950">
-                  Como conduzir este caso na prática
+                  {estudoFinal?.titulo || "Como conduzir este caso na prática"}
                 </h2>
 
                 <button
@@ -565,26 +511,139 @@ export default function FeedbackOSCE({
               </div>
 
               <p className="mt-3 max-w-3xl text-base leading-relaxed text-slate-600">
-                Resumo técnico estruturado para revisar a condução ideal deste atendimento e transformar as falhas da simulação em plano de estudo.
+                {estudoFinal?.subtitulo || "Resumo técnico estruturado para revisar a condução ideal deste atendimento e transformar as falhas da simulação em plano de estudo."}
               </p>
+
+              {estudoFinal?.especialidadeReferencia && (
+                <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-100/70 px-3 py-2">
+                  <span className="text-xs font-bold uppercase tracking-wide text-emerald-800">
+                    Especialista:
+                  </span>
+                  <span className="text-sm font-semibold text-emerald-900">
+                    {estudoFinal.especialidadeReferencia}
+                  </span>
+                </div>
+              )}
+
+              {estudoFinal?.resumoEspecialista && (
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-700 italic">
+                  {estudoFinal.resumoEspecialista}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-4">
-              {estudoFinal.map((secao, index) => (
-                <article
-                  key={index}
-                  className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur-sm md:p-5"
-                >
-                  <h3 className="text-base font-black text-slate-900 md:text-lg">
-                    {secao.titulo}
-                  </h3>
+            {carregandoEstudoFinal && (
+              <div className="text-center py-8">
+                <p className="text-sm text-slate-600">Gerando estudo final individualizado do caso...</p>
+              </div>
+            )}
 
-                  <p className="mt-3 text-sm leading-7 text-slate-700 md:text-base md:leading-8">
-                    {secao.texto}
-                  </p>
-                </article>
-              ))}
-            </div>
+            {erroEstudoFinal && !estudoFinal && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+                <p className="text-sm text-amber-800">{erroEstudoFinal}</p>
+              </div>
+            )}
+
+            {estudoFinal?.secoes && (
+              <div className="space-y-4">
+                {estudoFinal.secoes.map((secao: any, index: number) => (
+                  <article
+                    key={index}
+                    className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur-sm md:p-5"
+                  >
+                    <h3 className="text-base font-black text-slate-900 md:text-lg">
+                      {secao.titulo}
+                    </h3>
+
+                    <p className="mt-3 text-sm leading-7 text-slate-700 md:text-base md:leading-8">
+                      {secao.texto}
+                    </p>
+
+                    {secao.oQueRastrear && secao.oQueRastrear.length > 0 && (
+                      <div className="mt-3 rounded-xl bg-blue-50/70 p-3 border border-blue-100">
+                        <p className="text-xs font-black uppercase tracking-wide text-blue-700 mb-2">
+                          🔍 O que rastrear
+                        </p>
+                        <ul className="space-y-1 text-xs text-slate-700">
+                          {secao.oQueRastrear.map((item: string, i: number) => (
+                            <li key={i} className="leading-relaxed">• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {secao.pontosOSCE && secao.pontosOSCE.length > 0 && (
+                      <div className="mt-3 rounded-xl bg-emerald-50/70 p-3 border border-emerald-100">
+                        <p className="text-xs font-black uppercase tracking-wide text-emerald-700 mb-2">
+                          ✓ Pontos que contam no OSCE
+                        </p>
+                        <ul className="space-y-1 text-xs text-slate-700">
+                          {secao.pontosOSCE.map((item: string, i: number) => (
+                            <li key={i} className="leading-relaxed">• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {secao.errosComuns && secao.errosComuns.length > 0 && (
+                      <div className="mt-3 rounded-xl bg-rose-50/70 p-3 border border-rose-100">
+                        <p className="text-xs font-black uppercase tracking-wide text-rose-700 mb-2">
+                          ⚠ Erros comuns que reduzem a nota
+                        </p>
+                        <ul className="space-y-1 text-xs text-slate-700">
+                          {secao.errosComuns.map((item: string, i: number) => (
+                            <li key={i} className="leading-relaxed">• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {estudoFinal?.checklistNotaMaxima && estudoFinal.checklistNotaMaxima.length > 0 && (
+              <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur-sm md:p-5">
+                <h3 className="text-base font-black text-slate-900 md:text-lg mb-3">
+                  ✅ Checklist para nota máxima (20/20)
+                </h3>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  {estudoFinal.checklistNotaMaxima.map((item: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-emerald-600 font-bold shrink-0">☐</span>
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {estudoFinal?.respostaModelo && (
+              <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur-sm md:p-5">
+                <h3 className="text-base font-black text-slate-900 md:text-lg mb-3">
+                  🎯 Resposta modelo para o aluno
+                </h3>
+                <p className="text-sm leading-7 text-slate-700 md:text-base md:leading-8 whitespace-pre-wrap">
+                  {estudoFinal.respostaModelo}
+                </p>
+              </div>
+            )}
+
+            {estudoFinal?.errosCriticos && estudoFinal.errosCriticos.length > 0 && (
+              <div className="rounded-2xl border border-white/70 bg-rose-50/75 p-4 shadow-sm backdrop-blur-sm md:p-5">
+                <h3 className="text-base font-black text-rose-900 md:text-lg mb-3">
+                  🚫 Erros críticos neste caso
+                </h3>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  {estudoFinal.errosCriticos.map((item: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-rose-600 font-bold shrink-0">✗</span>
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </section>
 
@@ -599,7 +658,7 @@ export default function FeedbackOSCE({
             onClick={() => window.location.reload()}
             className="flex-1 rounded-2xl bg-blue-600 px-6 py-4 text-base font-black text-white transition-all hover:bg-blue-700 active:scale-[0.98] shadow-lg"
           >
-            🔄 Tentar novo caso
+            🔄 Tentar novamente
           </button>
         </div>
       </div>
