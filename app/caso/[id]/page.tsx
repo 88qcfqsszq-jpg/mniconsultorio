@@ -46,8 +46,6 @@ function CasoPageContent() {
   const apiConcluídaRef = useRef(false);
   const feedbackRecebidoRef = useRef<FeedbackOSCEType | null>(null);
 
-  const exameFisicoSolicitado = manobrasSolicitadas.length > 0;
-
   const getMensagemLoading = (percentual: number): string => {
     if (percentual < 16) return "Iniciando análise do atendimento...";
     if (percentual < 31) return "Organizando histórico da anamnese...";
@@ -108,135 +106,6 @@ function CasoPageContent() {
     setMensagemLoading(getMensagemLoading(progressoFeedback));
   }, [progressoFeedback]);
 
-  const calcularNota = useCallback(
-    (soap: FormularioSOAPType, diagnostico: DiagnosticoFormulario): number => {
-      let nota = 12; // Base (escala 0-20)
-
-      if (!caso) return nota;
-
-      // Avaliação do Subjetivo
-      if (
-        soap.subjetivo
-          .toLowerCase()
-          .includes("dor") ||
-        soap.subjetivo.toLowerCase().includes("início")
-      ) {
-        nota += 1;
-      }
-
-      // Avaliação do Objetivo
-      if (sinaisVitaisSolicitados && exameFisicoSolicitado) {
-        nota += 2;
-      }
-
-      // Avaliação da Hipótese Diagnóstica
-      const diagCorreto = caso.diagnosticoCorreto || caso.dados_ocultos_do_sistema.diagnostico_principal;
-      if (
-        diagnostico.hipotesePrincipal.toLowerCase() ===
-        diagCorreto.toLowerCase()
-      ) {
-        nota += 4;
-      } else if (
-        diagnostico.diagnosticosDisferenciais
-          .join(" ")
-          .toLowerCase()
-          .includes(diagCorreto.toLowerCase())
-      ) {
-        nota += 2;
-      }
-
-      // Avaliação dos Exames
-      const examesIndicados = caso.examesIndicados || [];
-      const examesCorretos = examesIndicados.filter((exame) =>
-        diagnostico.examesIndicados
-          .join(" ")
-          .toLowerCase()
-          .includes(exame.toLowerCase())
-      );
-      nota += examesCorretos.length * 1;
-
-      // Avaliação da Conduta
-      if (
-        soap.plano.length > 50 &&
-        diagnostico.conduta.length > 50
-      ) {
-        nota += 2;
-      }
-
-      return Math.min(nota, 20);
-    },
-    [caso, sinaisVitaisSolicitados, manobrasSolicitadas]
-  );
-
-  const gerarFeedback = useCallback(
-    (soap: FormularioSOAPType, diagnostico: DiagnosticoFormulario) => {
-      const nota = calcularNota(soap, diagnostico);
-
-      const acertos: string[] = [];
-      const erros: string[] = [];
-
-      if (!caso) return { nota: 0, acertos, erros, orientacaoDidata: "", tempoAtendimento: 0 };
-
-      // Verificar acertos
-      if (sinaisVitaisSolicitados) {
-        acertos.push("Solicitou sinais vitais");
-      } else {
-        erros.push("Não solicitou sinais vitais");
-      }
-
-      if (exameFisicoSolicitado) {
-        acertos.push("Solicitou exame físico");
-      } else {
-        erros.push("Não solicitou exame físico");
-      }
-
-      if (
-        diagnostico.hipotesePrincipal.toLowerCase() ===
-        (caso.diagnosticoCorreto || caso.dados_ocultos_do_sistema.diagnostico_principal).toLowerCase()
-      ) {
-        acertos.push(
-          `Diagnóstico correto: ${caso.diagnosticoCorreto || caso.dados_ocultos_do_sistema.diagnostico_principal}`
-        );
-      } else {
-        erros.push(
-          `Diagnóstico esperado: ${caso.diagnosticoCorreto || caso.dados_ocultos_do_sistema.diagnostico_principal}`
-        );
-      }
-
-      if (diagnostico.examesIndicados.length > 0) {
-        acertos.push("Indicou exames complementares");
-      }
-
-      if (diagnostico.conduta.length > 50) {
-        acertos.push("Plano de conduta detalhado");
-      } else {
-        erros.push("Plano de conduta incompleto ou muito breve");
-      }
-
-      const feedbackPadrao: FeedbackOSCEType = {
-        nota,
-        percentual: Math.round((nota / 20) * 100),
-        classificacao: nota >= 18 ? "Excelente" : nota >= 14 ? "Bom" : nota >= 10 ? "Regular" : "Insuficiente",
-        justificativaNota: "Aguardando avaliação detalhada...",
-        tempoAtendimento: tempoDecorrido,
-        resumoCaso: { diagnosticoEsperado: "", sindromePrincipal: "", achadosChave: [], raciocinioEsperado: "" },
-        anamnese: { acertos, faltouPerguntar: [], perguntasPoucoUteis: [], comentario: "" },
-        exameFisico: { manobrasRealizadas: [], achadosEncontrados: [], manobrasEsquecidas: [], comentario: "" },
-        sinaisVitais: { interpretacao: "", pontosDeAlerta: [] },
-        raciocinioDiagnostico: { hipoteseDoEstudante: "", diagnosticoEsperado: "", avaliacao: "", diferenciaisAdequados: [], diferenciaisFaltantes: [], comentario: "" },
-        examesComplementares: { adequados: [], faltantes: [], desnecessarios: [], comentario: "" },
-        conduta: { adequada: [], incompleta: [], erros: [], condutaModelo: "" },
-        soap: { subjetivo: "", objetivo: "", avaliacao: "", plano: "", comentarioGeral: "" },
-        errosCriticos: [],
-        respostaModeloOSCE: "",
-        planoDeEstudo: [],
-      };
-
-      return feedbackPadrao;
-    },
-    [caso, sinaisVitaisSolicitados, manobrasSolicitadas, tempoDecorrido, calcularNota]
-  );
-
   const handleFinalizarAtendimento = async () => {
     // Inicializar loading
     setGerandoFeedback(true);
@@ -283,7 +152,11 @@ function CasoPageContent() {
           sinaisVitaisDoEstudante: sinaisVitaisSolicitados ? caso?.sinaisVitaisCorretos : undefined,
           hipoteseDiagnostica: diagnostico.hipotesePrincipal,
           diagnosticosDiferenciais: diagnostico.diagnosticosDisferenciais,
-          examesSolicitados: diagnostico.examesIndicados,
+          examesRealizados: examesSolicitados.map(e => ({
+            nome: e.nome,
+            resultado: e.resultado
+          })),
+          examesIndicadosNoFormulario: diagnostico.examesIndicados,
           conduta: diagnostico.conduta,
           soap: soap,
           tempoAtendimento: tempoDecorrido,

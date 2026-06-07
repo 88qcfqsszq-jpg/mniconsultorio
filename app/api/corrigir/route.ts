@@ -2,8 +2,285 @@ import { NextRequest, NextResponse } from "next/server";
 import { casosOSCE } from "@/data/casos-osce";
 import { criarPromptExaminador } from "@/lib/prompts";
 import { openai } from "@/lib/openai";
-import { FeedbackOSCE } from "@/lib/types";
-import { verificarDiagnosticoCompativel } from "@/lib/diagnosticoHelper";
+import { FeedbackOSCE, CompetenciaAvaliacao } from "@/lib/types";
+
+// Máximos por competência (rubrica oficial: total 20 pontos)
+const MAXIMOS_COMPETENCIAS = {
+  "Comunicação e postura médica": 2,
+  "Anamnese dirigida": 4,
+  "Exame físico": 4,
+  "Exames complementares": 2,
+  "Raciocínio diagnóstico": 5,
+  "Conduta": 3,
+};
+
+// Parse seguro de JSON com fallback para extração manual
+function parseJSONSeguro(respostaRaw: string) {
+  try {
+    return JSON.parse(respostaRaw);
+  } catch (erroInicial) {
+    // Tentar extrair JSON válido dentro da resposta
+    const inicio = respostaRaw.indexOf("{");
+    const fim = respostaRaw.lastIndexOf("}");
+
+    if (inicio !== -1 && fim !== -1 && fim > inicio) {
+      try {
+        const jsonExtraido = respostaRaw.slice(inicio, fim + 1);
+        return JSON.parse(jsonExtraido);
+      } catch (erroExtracacao) {
+        throw erroInicial;
+      }
+    }
+
+    throw erroInicial;
+  }
+}
+
+// Detecta se SOAP é obrigatório para este caso
+function casoExigeSOAP(caso: any): boolean {
+  const texto = [
+    caso?.titulo,
+    caso?.tema,
+    caso?.temaOSCE,
+    caso?.objetivo_pedagogico,
+    caso?.diagnosticoCorreto,
+    ...(Array.isArray(caso?.subtopicosOSCE) ? caso.subtopicosOSCE : []),
+  ]
+    .filter(Boolean)
+    .map(String)
+    .join(" ")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+
+  return (
+    texto.includes("soap") ||
+    texto.includes("consulta ambulatorial") ||
+    texto.includes("retorno ambulatorial") ||
+    texto.includes("documentacao clinica")
+  );
+}
+
+// Remove penalizações indevidas por SOAP vazio em casos comuns
+function removerPenalizacoesIndevidasDeSOAP(
+  feedback: any,
+  soapObrigatorio: boolean
+): any {
+  if (soapObrigatorio) return feedback;
+
+  const termosSOAP = ["soap", "s.o.a.p", "estrutura soap"];
+
+  const contemSOAP = (texto: string): boolean =>
+    termosSOAP.some((termo) =>
+      String(texto).toLowerCase().includes(termo)
+    );
+
+  // Limpar resumo se contiver menção indevida a SOAP
+  if (typeof feedback.resumo === "string" && contemSOAP(feedback.resumo)) {
+    feedback.resumo = feedback.resumo
+      .replace(/e o SOAP apresentaram falhas/gi, "apresentou pontos a melhorar")
+      .replace(/SOAP apresentou falhas/gi, "há pontos a melhorar")
+      .replace(/SOAP vazio/gi, "registro incompleto")
+      .replace(/falta SOAP/gi, "há oportunidades de melhoria")
+      .replace(/soap/gi, "documentação");
+  }
+
+  // Remover SOAP vazio das melhorias de cada competência
+  if (Array.isArray(feedback.rubricaAvaliacao)) {
+    feedback.rubricaAvaliacao = feedback.rubricaAvaliacao.map(
+      (item: any) => ({
+        ...item,
+        melhorias: Array.isArray(item.melhorias)
+          ? item.melhorias.filter((m: string) => !contemSOAP(String(m)))
+          : [],
+      })
+    );
+  }
+
+  // Remover SOAP dos objetivos não cumpridos
+  if (feedback.objetivosNaoCumpridos) {
+    Object.keys(feedback.objetivosNaoCumpridos).forEach((key) => {
+      if (Array.isArray(feedback.objetivosNaoCumpridos[key])) {
+        feedback.objetivosNaoCumpridos[key] = feedback.objetivosNaoCumpridos[key].filter(
+          (item: string) => !contemSOAP(String(item))
+        );
+      }
+    });
+  }
+
+  return feedback;
+}
+
+// Classifica a nota em categorias
+function classificarNota(
+  nota: number
+): "Excelente" | "Bom" | "Regular" | "Insuficiente" {
+  if (nota >= 17) return "Excelente";
+  if (nota >= 16) return "Bom";
+  if (nota >= 12) return "Regular";
+  return "Insuficiente";
+}
+
+// Normaliza rubrica com validação de 6 competências obrigatórias
+function normalizarRubricaAvaliacao(
+  rubrica: any
+): CompetenciaAvaliacao[] {
+  const competenciasObrigatorias = [
+    { nome: "Comunicação e postura médica", maximo: 2 },
+    { nome: "Anamnese dirigida", maximo: 4 },
+    { nome: "Exame físico", maximo: 4 },
+    { nome: "Exames complementares", maximo: 2 },
+    { nome: "Raciocínio diagnóstico", maximo: 5 },
+    { nome: "Conduta", maximo: 3 },
+  ];
+
+  const rubricaArray = Array.isArray(rubrica) ? rubrica : [];
+
+  return competenciasObrigatorias.map((obrigatoria) => {
+    // Procura por item que contenha o nome da competência
+    const itemEncontrado = rubricaArray.find((item: any) => {
+      if (!item) return false;
+      const nomeItem = String(item?.competencia || item?.nome || "").toLowerCase();
+      const nomeObrg = obrigatoria.nome.toLowerCase().slice(0, 10);
+      return nomeItem.includes(nomeObrg) || nomeObrg.includes(nomeItem.slice(0, 8));
+    });
+
+    const pontosRaw = Number(itemEncontrado?.pontosObtidos ?? 0);
+    const pontosObtidos = Math.max(
+      0,
+      Math.min(
+        obrigatoria.maximo,
+        Number.isFinite(pontosRaw) ? pontosRaw : 0
+      )
+    );
+
+    return {
+      nome: obrigatoria.nome,
+      pontosObtidos,
+      pontosMaximos: obrigatoria.maximo,
+      acertos: Array.isArray(itemEncontrado?.acertos)
+        ? itemEncontrado.acertos
+        : [],
+      melhorias: Array.isArray(itemEncontrado?.melhorias)
+        ? itemEncontrado.melhorias
+        : ["Avaliação não concluída pela IA."],
+    };
+  });
+}
+
+// Calcula nota como soma exata da rubrica
+function calcularNotaDaRubrica(rubrica: CompetenciaAvaliacao[]): number {
+  return rubrica.reduce((total, item) => total + Number(item.pontosObtidos || 0), 0);
+}
+
+// Cria feedback de fallback técnico com rubrica zerada
+function criarFeedbackFallbackComRubrica(motivo: string, tempoAtendimento: number): FeedbackOSCE {
+  const rubricaFallback: CompetenciaAvaliacao[] = [
+    {
+      nome: "Comunicação e postura médica",
+      pontosObtidos: 0,
+      pontosMaximos: 2,
+      acertos: [],
+      melhorias: ["Avaliação indisponível por falha técnica."],
+    },
+    {
+      nome: "Anamnese dirigida",
+      pontosObtidos: 0,
+      pontosMaximos: 4,
+      acertos: [],
+      melhorias: ["Avaliação indisponível por falha técnica."],
+    },
+    {
+      nome: "Exame físico",
+      pontosObtidos: 0,
+      pontosMaximos: 4,
+      acertos: [],
+      melhorias: ["Avaliação indisponível por falha técnica."],
+    },
+    {
+      nome: "Exames complementares",
+      pontosObtidos: 0,
+      pontosMaximos: 2,
+      acertos: [],
+      melhorias: ["Avaliação indisponível por falha técnica."],
+    },
+    {
+      nome: "Raciocínio diagnóstico",
+      pontosObtidos: 0,
+      pontosMaximos: 5,
+      acertos: [],
+      melhorias: ["Avaliação indisponível por falha técnica."],
+    },
+    {
+      nome: "Conduta",
+      pontosObtidos: 0,
+      pontosMaximos: 3,
+      acertos: [],
+      melhorias: ["Avaliação indisponível por falha técnica."],
+    },
+  ];
+
+  return {
+    nota: 0,
+    percentual: 0,
+    classificacao: "Insuficiente",
+    justificativaNota: `FALLBACK TÉCNICO: ${motivo}. A avaliação não foi concluída. Este resultado não deve ser interpretado como nota real do aluno. Por favor, repita o atendimento.`,
+    tempoAtendimento,
+    rubricaAvaliacao: rubricaFallback,
+    resumoCaso: {
+      diagnosticoEsperado: "",
+      sindromePrincipal: "",
+      achadosChave: [],
+      raciocinioEsperado: "",
+    },
+    anamnese: {
+      acertos: [],
+      faltouPerguntar: [],
+      perguntasPoucoUteis: [],
+      comentario: "Avaliação indisponível por falha técnica.",
+    },
+    exameFisico: {
+      manobrasRealizadas: [],
+      achadosEncontrados: [],
+      manobrasEsquecidas: [],
+      comentario: "Avaliação indisponível por falha técnica.",
+    },
+    sinaisVitais: {
+      interpretacao: "Avaliação indisponível por falha técnica.",
+      pontosDeAlerta: [],
+    },
+    raciocinioDiagnostico: {
+      hipoteseDoEstudante: "",
+      diagnosticoEsperado: "",
+      avaliacao: "Avaliação indisponível por falha técnica.",
+      diferenciaisAdequados: [],
+      diferenciaisFaltantes: [],
+      comentario: "Avaliação indisponível por falha técnica.",
+    },
+    examesComplementares: {
+      adequados: [],
+      faltantes: [],
+      desnecessarios: [],
+      comentario: "Avaliação indisponível por falha técnica.",
+    },
+    conduta: {
+      adequada: [],
+      incompleta: [],
+      erros: [],
+      condutaModelo: "",
+    },
+    soap: {
+      subjetivo: "",
+      objetivo: "",
+      avaliacao: "",
+      plano: "",
+      comentarioGeral: "Avaliação indisponível por falha técnica.",
+    },
+    errosCriticos: [],
+    respostaModeloOSCE: "",
+    planoDeEstudo: [],
+  };
+}
 
 interface RequestBody {
   casoId: string;
@@ -20,7 +297,8 @@ interface RequestBody {
   sinaisVitaisDoEstudante?: any;
   hipoteseDiagnostica: string;
   diagnosticosDiferenciais: string[];
-  examesSolicitados: string[];
+  examesRealizados?: Array<{ nome: string; resultado: string }>;
+  examesIndicadosNoFormulario?: string[];
   conduta: string;
   soap: {
     subjetivo: string;
@@ -42,7 +320,8 @@ export async function POST(request: NextRequest) {
       sinaisVitaisDoEstudante,
       hipoteseDiagnostica,
       diagnosticosDiferenciais,
-      examesSolicitados,
+      examesRealizados = [],
+      examesIndicadosNoFormulario = [],
       conduta,
       soap,
       tempoAtendimento = 0,
@@ -52,7 +331,6 @@ export async function POST(request: NextRequest) {
       !casoId ||
       !hipoteseDiagnostica ||
       !diagnosticosDiferenciais ||
-      !examesSolicitados ||
       !conduta ||
       !soap
     ) {
@@ -71,6 +349,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Detectar se SOAP é obrigatório para este caso
+    const soapObrigatorio = casoExigeSOAP(caso);
+
     // Criar prompt para o examinador
     const prompt = criarPromptExaminador(
       caso,
@@ -80,13 +361,15 @@ export async function POST(request: NextRequest) {
       sinaisVitaisDoEstudante,
       hipoteseDiagnostica,
       diagnosticosDiferenciais,
-      examesSolicitados,
+      examesRealizados,
+      examesIndicadosNoFormulario,
       conduta,
       soap,
-      tempoAtendimento
+      tempoAtendimento,
+      soapObrigatorio
     );
 
-    // Chamar OpenAI
+    // Chamar OpenAI com JSON obrigatório
     let respostaRaw: string | null = null;
 
     if (openai) {
@@ -96,153 +379,140 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "system",
-              content: "Você é um professor de medicina avaliando desempenho em OSCE. Retorne sempre JSON válido.",
+              content:
+                "Você é um examinador OSCE rigoroso e justo. Responda exclusivamente em JSON válido. Não use markdown. Não use ```json. Não escreva nenhum texto fora do JSON. Todos os campos obrigatórios devem existir. Todos os arrays devem existir, mesmo que vazios.",
             },
             {
               role: "user",
               content: prompt,
             },
           ],
-          temperature: 0.5,
-          max_tokens: 2000,
+          temperature: 0.2,
+          max_tokens: 5000,
+          response_format: { type: "json_object" } as any,
         });
 
-        respostaRaw = response.choices[0]?.message?.content || null;
+        respostaRaw = response.choices?.[0]?.message?.content || null;
       } catch (error) {
         console.error("Erro ao chamar OpenAI:", error);
         respostaRaw = null;
       }
     }
 
-    // Se OpenAI falhou, retornar feedback padrão
+    // Se OpenAI falhou completamente, retornar fallback técnico
     if (!respostaRaw) {
-      const feedbackPadrao: FeedbackOSCE = {
-        nota: 12,
-        percentual: 60,
-        classificacao: "Regular",
-        justificativaNota: "Avaliação padrão. Configure OPENAI_API_KEY para feedback detalhado.",
-        tempoAtendimento,
-        resumoCaso: {
-          diagnosticoEsperado: caso.dados_ocultos_do_sistema.diagnostico_principal,
-          sindromePrincipal: "Não disponível",
-          achadosChave: [],
-          raciocinioEsperado: "Não disponível",
-        },
-        anamnese: {
-          acertos: [],
-          faltouPerguntar: [],
-          perguntasPoucoUteis: [],
-          comentario: "Feedback detalhado indisponível. Configure a API.",
-        },
-        exameFisico: {
-          manobrasRealizadas: exameFisico.map((m) => m.textDigitado),
-          achadosEncontrados: [],
-          manobrasEsquecidas: [],
-          comentario: "Não foi possível analisar detalhadamente.",
-        },
-        sinaisVitais: {
-          interpretacao: sinaisVitaisSolicitados ? "Sinais vitais solicitados." : "Sinais vitais não solicitados.",
-          pontosDeAlerta: [],
-        },
-        raciocinioDiagnostico: {
-          hipoteseDoEstudante: hipoteseDiagnostica,
-          diagnosticoEsperado: caso.dados_ocultos_do_sistema.diagnostico_principal,
-          avaliacao: "Não foi possível analisar.",
-          diferenciaisAdequados: diagnosticosDiferenciais,
-          diferenciaisFaltantes: [],
-          comentario: "Análise detalhada indisponível.",
-        },
-        examesComplementares: {
-          adequados: examesSolicitados,
-          faltantes: [],
-          desnecessarios: [],
-          comentario: "Não foi possível analisar.",
-        },
-        conduta: {
-          adequada: conduta.length > 30 ? ["Conduta registrada"] : [],
-          incompleta: conduta.length <= 30 ? ["Conduta muito breve"] : [],
-          erros: [],
-          condutaModelo: "",
-        },
-        soap: {
-          subjetivo: soap.subjetivo.slice(0, 50),
-          objetivo: soap.objetivo.slice(0, 50),
-          avaliacao: soap.avaliacao.slice(0, 50),
-          plano: soap.plano.slice(0, 50),
-          comentarioGeral: "Configure OpenAI para análise SOAP detalhada.",
-        },
-        errosCriticos: [],
-        respostaModeloOSCE: "Configure a chave de API para obter resposta modelo.",
-        planoDeEstudo: [],
-      };
-      return NextResponse.json(feedbackPadrao);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[AVALIAÇÃO] OpenAI não retornou resposta. Fallback ativado.");
+      }
+      return NextResponse.json(
+        criarFeedbackFallbackComRubrica("OpenAI não respondeu", tempoAtendimento)
+      );
     }
 
-    // Tentar fazer parse do JSON
+    // Parse seguro com extração de JSON se necessário
     let feedback: FeedbackOSCE;
     try {
-      feedback = JSON.parse(respostaRaw);
+      const jsonParsado = parseJSONSeguro(respostaRaw);
 
-      // Adicionar tempoAtendimento se não estiver na resposta
-      if (!feedback.tempoAtendimento) {
-        feedback.tempoAtendimento = tempoAtendimento;
-      }
+      // Normalizar rubrica obrigatoriamente
+      const rubricaNormalizada = normalizarRubricaAvaliacao(
+        jsonParsado?.rubricaAvaliacao || []
+      );
 
-      // Normalizar escala: se nota ≤ 10, assumir escala 0-10 e converter para 0-20
-      if (feedback.nota <= 10) {
-        feedback.nota = feedback.nota * 2;
-      }
+      // Calcular nota como soma exata
+      const notaCalculada = calcularNotaDaRubrica(rubricaNormalizada);
 
-      // Garantir que nota nunca exceda 20
-      feedback.nota = Math.min(feedback.nota, 20);
-
-      // Recalcular percentual baseado em escala 0-20
-      feedback.percentual = Math.round((feedback.nota / 20) * 100);
-
-      // Ajustar classificação baseada na escala 0-20
-      if (feedback.nota >= 17) {
-        feedback.classificacao = "Excelente";
-      } else if (feedback.nota >= 16) {
-        feedback.classificacao = "Bom";
-      } else if (feedback.nota >= 12) {
-        feedback.classificacao = "Regular";
-      } else {
-        feedback.classificacao = "Insuficiente";
-      }
-    } catch (parseError) {
-      console.error("Erro ao fazer parse da resposta OpenAI:", respostaRaw);
-
-      const feedbackPadrao: FeedbackOSCE = {
-        nota: 12,
-        percentual: 60,
-        classificacao: "Regular",
-        justificativaNota: "Erro ao processar feedback detalhado.",
+      // Criar feedback normalizado
+      feedback = {
+        nota: Math.min(Math.max(notaCalculada, 0), 20),
+        percentual: Math.round((notaCalculada / 20) * 100),
+        classificacao: classificarNota(notaCalculada),
+        justificativaNota: jsonParsado?.justificativaNota || "Avaliação concluída.",
         tempoAtendimento,
-        resumoCaso: {
+        rubricaAvaliacao: rubricaNormalizada,
+        resumoCaso: jsonParsado?.resumoCaso || {
           diagnosticoEsperado: caso.dados_ocultos_do_sistema.diagnostico_principal,
           sindromePrincipal: "",
           achadosChave: [],
           raciocinioEsperado: "",
         },
-        anamnese: { acertos: [], faltouPerguntar: [], perguntasPoucoUteis: [], comentario: "Erro no processamento." },
-        exameFisico: { manobrasRealizadas: [], achadosEncontrados: [], manobrasEsquecidas: [], comentario: "Erro." },
-        sinaisVitais: { interpretacao: "", pontosDeAlerta: [] },
-        raciocinioDiagnostico: {
+        anamnese: jsonParsado?.anamnese || {
+          acertos: [],
+          faltouPerguntar: [],
+          perguntasPoucoUteis: [],
+          comentario: "",
+        },
+        exameFisico: jsonParsado?.exameFisico || {
+          manobrasRealizadas: [],
+          achadosEncontrados: [],
+          manobrasEsquecidas: [],
+          comentario: "",
+        },
+        sinaisVitais: jsonParsado?.sinaisVitais || {
+          interpretacao: "",
+          pontosDeAlerta: [],
+        },
+        raciocinioDiagnostico: jsonParsado?.raciocinioDiagnostico || {
           hipoteseDoEstudante: hipoteseDiagnostica,
           diagnosticoEsperado: caso.dados_ocultos_do_sistema.diagnostico_principal,
           avaliacao: "",
           diferenciaisAdequados: [],
           diferenciaisFaltantes: [],
-          comentario: "Erro no processamento.",
+          comentario: "",
         },
-        examesComplementares: { adequados: [], faltantes: [], desnecessarios: [], comentario: "Erro." },
-        conduta: { adequada: [], incompleta: [], erros: [], condutaModelo: "" },
-        soap: { subjetivo: "", objetivo: "", avaliacao: "", plano: "", comentarioGeral: "Erro." },
-        errosCriticos: [],
-        respostaModeloOSCE: "",
-        planoDeEstudo: [],
+        examesComplementares: jsonParsado?.examesComplementares || {
+          adequados: [],
+          faltantes: [],
+          desnecessarios: [],
+          comentario: "",
+        },
+        conduta: jsonParsado?.conduta || {
+          adequada: [],
+          incompleta: [],
+          erros: [],
+          condutaModelo: "",
+        },
+        soap: jsonParsado?.soap || {
+          subjetivo: soap.subjetivo.slice(0, 100),
+          objetivo: soap.objetivo.slice(0, 100),
+          avaliacao: soap.avaliacao.slice(0, 100),
+          plano: soap.plano.slice(0, 100),
+          comentarioGeral: "",
+        },
+        errosCriticos: jsonParsado?.errosCriticos || [],
+        respostaModeloOSCE: jsonParsado?.respostaModeloOSCE || "",
+        planoDeEstudo: jsonParsado?.planoDeEstudo || [],
       };
-      return NextResponse.json(feedbackPadrao);
+
+      // Logs em desenvolvimento
+      if (process.env.NODE_ENV === "development") {
+        console.log("[AVALIAÇÃO] Feedback normalizado com sucesso");
+        console.log("[AVALIAÇÃO] Nota final (soma da rubrica):", feedback.nota);
+        console.log("[AVALIAÇÃO] Rubrica:", feedback.rubricaAvaliacao);
+      }
+
+      // Remover penalizações indevidas por SOAP vazio em casos comuns
+      feedback = removerPenalizacoesIndevidasDeSOAP(feedback, soapObrigatorio);
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("[AVALIAÇÃO] Feedback após limpeza de SOAP:", feedback.nota);
+      }
+    } catch (parseError) {
+      console.error(
+        "Erro ao fazer parse da resposta OpenAI:",
+        parseError instanceof Error ? parseError.message : String(parseError)
+      );
+
+      if (process.env.NODE_ENV === "development") {
+        console.log("Resposta bruta da OpenAI (primeiros 500 chars):", respostaRaw?.slice(0, 500));
+      }
+
+      return NextResponse.json(
+        criarFeedbackFallbackComRubrica(
+          "Erro ao processar resposta da IA",
+          tempoAtendimento
+        )
+      );
     }
 
     return NextResponse.json(feedback);

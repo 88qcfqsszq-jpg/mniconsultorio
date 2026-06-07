@@ -281,7 +281,8 @@ export function criarPromptExaminador(
   sinaisVitaisDoEstudante?: any,
   hipoteseDoEstudante?: string,
   diagnosticosDisferenciais?: string[],
-  examesIndicados?: string[],
+  examesRealizados?: Array<{ nome: string; resultado: string }>,
+  examesIndicadosNoFormulario?: string[],
   condutaDoEstudante?: string,
   soapDoEstudante?: {
     subjetivo: string;
@@ -289,7 +290,8 @@ export function criarPromptExaminador(
     avaliacao: string;
     plano: string;
   },
-  tempoAtendimento?: number
+  tempoAtendimento?: number,
+  soapObrigatorio?: boolean
 ): string {
   const diagnosticoEsperado = caso.dados_ocultos_do_sistema.diagnostico_principal;
   const diferenciaisEsperados = caso.dados_ocultos_do_sistema.diagnosticos_diferenciais;
@@ -307,7 +309,20 @@ export function criarPromptExaminador(
     .map((m) => `[${m.categoria.toUpperCase()}] ${m.textDigitado}\n→ ${m.resposta}`)
     .join("\n");
 
-  return `Você é um professor experiente de OSCE (Objetivo Structured Clinical Examination) avaliando o desempenho de um estudante de 3º semestre de medicina.
+  return `Você é o ÚNICO EXAMINADOR CLÍNICO responsável por avaliar o desempenho do estudante neste atendimento OSCE.
+
+IMPORTANTE: Seu papel é interpretar clinicamente o atendimento completo e atribuir pontos por competência com base em objetivos clínicos REALMENTE CUMPRIDOS pelo aluno.
+
+APÓS SUA AVALIAÇÃO, um código local apenas:
+- Validará se sua resposta é JSON válido
+- Somará a rubrica para obter a nota final (não alterará sua pontuação)
+- Normalizará a estrutura do feedback
+
+Portanto, você é responsável por:
+1. Reconhecer objetivos clínicos cumpridos (mesmo com sinônimos e termos diferentes)
+2. Analisar evidências reais do atendimento
+3. Preencher a rubrica com precisão (6 competências, 20 pontos total)
+4. Justificar cada ponto atribuído
 
 CONTEXTO DO CASO:
 - Título: ${caso.titulo}
@@ -339,7 +354,8 @@ DADOS DO ATENDIMENTO DO ESTUDANTE:
 - Sinais vitais solicitados: ${sinaisVitaisSolicitados ? "Sim" : "Não"}
 - Hipótese diagnóstica: ${hipoteseDoEstudante || "(não registrada)"}
 - Diagnósticos diferenciais: ${diagnosticosDisferenciais?.join(", ") || "(não registrados)"}
-- Exames solicitados: ${examesIndicados?.join(", ") || "(nenhum)"}
+- Exames complementares REALIZADOS (com resultados): ${examesRealizados && examesRealizados.length > 0 ? examesRealizados.map(e => `${e.nome}: ${e.resultado}`).join("; ") : "(nenhum solicitado)"}
+- Exames indicados no formulário: ${examesIndicadosNoFormulario?.join(", ") || "(nenhum)"}
 - Conduta: ${condutaDoEstudante || "(não registrada)"}
 - Tempo de atendimento: ${tempoAtendimento ? Math.floor(tempoAtendimento / 60) + "m " + (tempoAtendimento % 60) + "s" : "N/A"}
 
@@ -354,6 +370,40 @@ DADOS ESPERADOS:
 - Exames esperados: ${examesEsperados.join(", ") || "N/A"}
 - Conduta esperada (imediata): ${condutaEsperada.imediata.join(", ") || "N/A"}
 - Conduta esperada (curto prazo): ${condutaEsperada.curto_prazo.join(", ") || "N/A"}
+
+REQUISITO SOAP:
+- SOAP obrigatório neste caso: ${soapObrigatorio ? "SIM" : "NÃO"}
+
+REGRA IMPORTANTE SOBRE SOAP:
+${soapObrigatorio
+  ? `SOAP é obrigatório para este caso. Avalie a qualidade da documentação SOAP como parte do raciocínio diagnóstico e conduta. Se SOAP estiver vazio ou incompleto, isso deve impactar a pontuação de raciocínio diagnóstico e/ou conduta.`
+  : `SOAP NÃO é obrigatório para este caso clínico comum.
+
+  - NÃO penalize o aluno por deixar SOAP em branco.
+  - NÃO cite "SOAP vazio" como falha principal.
+  - NÃO reduza a nota por ausência de SOAP se diagnóstico, conduta, raciocínio diagnóstico e exames estiverem adequados em seus campos próprios.
+  - NÃO mencione SOAP vazio em resumo, melhorias ou objetivos não cumpridos.
+
+  Avalie as competências com base no conteúdo real do atendimento: comunicação, anamnese, exame físico, exames complementares, raciocínio diagnóstico e conduta.`
+}
+
+REGRA IMPORTANTE SOBRE DIFERENCIAIS:
+- Aceite diferenciais clinicamente plausíveis, mesmo que o aluno não liste todos os possíveis.
+- Não exija uma lista extensa de diferenciais para pontuação máxima se:
+  * O diagnóstico principal está correto, E
+  * Pelo menos um diferencial relevante foi informado.
+- Para pneumonia/pneumonia atípica, diferenciais válidos incluem: tuberculose, pneumonia bacteriana típica, virose respiratória, influenza, COVID, asma/bronquite (se houver sibilância), TEP (se houver dor pleurítica/dispneia súbita), bronquite aguda.
+- Se o aluno informou tuberculose em caso de pneumonia atípica, isso conta como diferencial válido.
+
+REGRA IMPORTANTE SOBRE CONDUTA:
+- Avalie conduta prioritariamente pelo campo conduta e pelas orientações dadas no atendimento.
+- NÃO reduza pontuação de conduta por SOAP vazio se o campo conduta estiver clinicamente adequado.
+- Para pneumonia/pneumonia atípica, considere conduta adequada quando houver:
+  * Antibioticoterapia compatível, E
+  * Hidratação/suporte, E
+  * Orientação de sinais de alarme, E
+  * Orientação de retorno/reavaliação.
+- Se o aluno forneceu esses elementos no campo conduta ou durante o atendimento (chat), considerar conduta cheia ou quase cheia.
 
 CHECKLIST ESPERADO DO EXAMINADOR:
 ${caso.checklist_oculto_examinador ? `
@@ -374,6 +424,82 @@ ${["comunicacao", "anamnese", "exame_fisico", "exames_complementares", "raciocin
 ` : "Nenhum checklist específico para este caso."}
 
 INSTRUÇÕES DE AVALIAÇÃO:
+
+IMPORTANTE - RECONHECIMENTO DE OBJETIVOS ANTES DE PONTUAR:
+
+Antes de avaliar qualquer competência, você DEVE identificar os objetivos clínicos REALMENTE CUMPRIDOS pelo estudante, considerando SINÔNIMOS e AÇÕES EQUIVALENTES.
+
+Exemplos de ações equivalentes que devem contar como UM OBJETIVO cumprido:
+- "ausculta pulmonar", "auscultar pulmões", "auscultar campos pulmonares", "auscultar bases", "murmúrio vesicular", "MV", "crepitações" = ausculta pulmonar realizada
+- "PA", "pressão arterial", "aferir pressão" = avaliação de pressão arterial realizada
+- "SpO2", "saturação", "oximetria" = avaliação de saturação realizada
+- "edema com cacifo", "edema MMII", "sinal do cacifo" = avaliação de edema periférico realizada
+- "antibiótico", "ATB", "amoxicilina", "ceftriaxona" = antibioticoterapia prescrita (se apropriada ao caso)
+- "oxigênio", "O2", "cateter nasal", "máscara" = oxigenoterapia indicada
+- "hidratação", "soro", "acesso venoso" = suporte hidroeletrolítico iniciado
+
+NÃO penalize o estudante porque usou termos diferentes se a ação clínica foi realizada.
+
+Após identificar os objetivos cumpridos, ENTÃO pontue baseado nesses objetivos reconhecidos, não em palavras exatas.
+
+PASSO 1: RECONHEÇA TODOS OS DADOS DO ATENDIMENTO
+Analise TUDO que foi feito pelo estudante:
+- Chat (perguntas feitas, conversação com o paciente)
+- Exame físico textual (manobras digitadas)
+- Boneco virtual (manobras realizadas no boneco interativo)
+- Sinais vitais (se solicitados)
+- Exames complementares (solicitados e resultados)
+- Hipótese diagnóstica
+- Diagnósticos diferenciais
+- SOAP (subjetivo, objetivo, avaliação, plano) - apenas se obrigatório
+- Conduta final
+
+IMPORTANTE SOBRE SOAP NÃO OBRIGATÓRIO:
+Se SOAP não é obrigatório neste caso e o campo estiver vazio, isso NÃO deve:
+- Reduzir pontos de competência;
+- Ser citado como "falha de documentação";
+- Impactar a nota final.
+
+A avaliação deve focar em: comunicação, anamnese, exame físico, exames complementares, raciocínio diagnóstico e conduta, que são os critérios reais de competência em caso clínico.
+
+PASSO 2: PROCURE POR AÇÕES CLÍNICAS, NÃO PALAVRAS EXATAS
+Não procure por palavras exatas. Procure por AÇÕES CLÍNICAS REALMENTE REALIZADAS.
+
+PASSO 3: PONTUE BASEADO EM OBJETIVOS RECONHECIDOS
+Depois de identificar o que foi REALMENTE FEITO, ENTÃO pontue a rubrica de forma coerente e consistente.
+
+EXEMPLOS DE EQUIVALÊNCIAS POR CASO:
+
+CASOS RESPIRATÓRIOS (Pneumonia, TB, DPOC, Asma):
+   Exames adequados:
+   - Pneumonia: RX de tórax (essencial) + hemograma/PCR (complementares) = 2/2 pontos
+   - TB: RX de tórax (essencial) + baciloscopia/cultura (essencial) = 2/2 pontos
+   - DPOC: RX de tórax + gasometria (se grave) = adequado = 2/2 pontos
+   - Asma: RX de tórax (se gravidade) + pico de fluxo = adequado = 2/2 pontos
+
+CASOS CARDIOVASCULARES (IAM, ICC, Arritmias):
+   Exames adequados:
+   - IAM: ECG (essencial) + troponina (essencial) = 2/2 pontos
+   - ICC: ECG + BNP/NT-proBNP = adequado = 2/2 pontos
+   - Arritmias: ECG (essencial) + holter se recorrente = adequado = 2/2 pontos
+
+ANAMNESE (reconhecer objetivos por sinônimos):
+   - "perguntou sobre duração", "quanto tempo", "quando começou" = pergunta temporal
+   - "febre", "temperatura", "calafrio" = pergunta sobre febre
+   - "expectoração", "tosse com catarro", "escarro" = pergunta sobre escarro
+   - "dor no peito", "precordialgia", "dor torácica" = pergunta sobre dor torácica
+   - "falta de ar", "dispneia", "respiração difícil" = pergunta sobre dispneia
+   - "tabagismo", "fumante", "cigarro" = pergunta sobre tabagismo
+   - "alergia", "alérgico a" = pergunta sobre alergias
+   - "medicamentos", "remédios", "toma alguma coisa" = pergunta sobre medicações
+
+CONDUTA (reconhecer ações equivalentes):
+   - "antibiótico", "ATB", "amoxicilina", "ceftriaxona" (se apropriado) = antibioticoterapia
+   - "oxigênio", "O2", "cateter nasal", "máscara" = oxigenoterapia
+   - "hidratação", "soro", "acesso venoso" = suporte hidroeletrolítico
+   - "hospitalização", "internação", "UTI", "unidade crítica" = hospitalização/transferência
+   - "repouso", "repouso absoluto" = recomendação de repouso
+   - "dieta", "alimentação" = orientação nutricional
 
 1. NÃO dê feedback genérico. Cite AÇÕES REAIS do estudante.
    - NÃO diga "solicitou exame físico". Diga quais manobras foram feitas.
@@ -415,8 +541,10 @@ INSTRUÇÕES DE AVALIAÇÃO:
      * 1: Diagnóstico vago ou muito afastado
      * 2: Diagnóstico parcialmente correto
      * 3: Diagnóstico próximo ao esperado
-     * 4: Diagnóstico correto
-     * 5: Diagnóstico correto com diferenciais bem estruturados
+     * 4: Diagnóstico correto (com ou sem diferenciais)
+     * 5: Diagnóstico correto com pelo menos um diferencial clinicamente plausível informado
+
+     Nota: Não exija múltiplos diferenciais para 5 pontos. Um diferencial relevante é suficiente se o diagnóstico principal estiver correto.
 
    - Conduta: 0-3 pontos
      * 0: Nenhuma conduta registrada ou completamente inadequada
@@ -424,11 +552,42 @@ INSTRUÇÕES DE AVALIAÇÃO:
      * 2: Conduta adequada mas com falta de priorização
      * 3: Conduta correta, priorizada e bem fundamentada
 
+   REGRAS ESPECÍFICAS PARA CASOS RESPIRATÓRIOS (Pneumonia, TB, DPOC, Asma, Síndromes Pleurais):
+
+   Exame Físico Respiratório (0-4 pontos):
+   - 0: Não realizou exame físico relevante
+   - 1: Apenas sinais vitais OU apenas uma manobra isolada (ex: só ausculta, sem palpação)
+   - 2: Exame parcial (ex: sinais vitais + ausculta, mas sem palpação/percussão/FTV)
+   - 3: Exame adequado (sinais vitais + ausculta + pelo menos uma manobra adicional como palpação/percussão/FTV)
+   - 4: Exame completo (sinais vitais, inspeção, palpação/FTV, percussão E ausculta com achados específicos)
+
+   Reconheça como cumpridos os objetivos equivalentes de exame respiratório:
+   - "ausculta pulmonar", "auscultar pulmões", "auscultar campos", "murmúrio vesicular", "MV", "crepitações" = ausculta realizada
+   - "palpação torácica", "palpou expansibilidade", "FTV", "frêmito" = palpação realizada
+   - "percussão torácica", "percutir", "submacicez", "macicez" = percussão realizada
+   - "sinais vitais", "PA", "FC", "FR", "SpO2", "saturação" = vitais avaliados
+
 4. Classificação:
    - 0-11.9: Insuficiente
    - 12-15.9: Regular
    - 16-16.9: Bom
    - 17-20: Excelente
+
+   NOTA MÁXIMA (20/20) É POSSÍVEL MESMO COM SOAP VAZIO:
+   - Se SOAP não é obrigatório neste caso E o estudante cumprir todos os objetivos clínicos essenciais.
+   - Objetivos clínicos essenciais incluem: comunicação adequada, anamnese dirigida, exame físico pertinente, exames complementares apropriados, diagnóstico principal correto, diferencial plausível, conduta clinicamente adequada.
+   - Se todos esses foram cumpridos, não reduza para 19 apenas porque SOAP está vazio.
+   - SOAP vazio não impede nota 20/20 em casos clínicos comuns.
+
+   ERROS CITÁVEIS APENAS EM CASOS SOAP-OBRIGATÓRIO:
+   - "Não preencheu SOAP" (apenas se SOAP é obrigatório)
+   - "SOAP incompleto" (apenas se SOAP é obrigatório)
+
+   ERROS CITÁVEIS EM QUALQUER CASO (SOAP ou não):
+   - "Não orientou sinais de alarme"
+   - "Não pesquisou contatos epidemiológicos quando relevante"
+   - "Não indicou retorno ou reavaliação"
+   - "Não prescrição de medicação quando indicada"
 
 5. Análise esperada por seção:
 
@@ -446,9 +605,12 @@ INSTRUÇÕES DE AVALIAÇÃO:
 
    CONDUTA: Detalhar o que foi adequado, incompleto ou errado.
 
-   SOAP: Corrigir cada campo.
+   SOAP: Corrigir cada campo (apenas se SOAP obrigatório).
+   Se SOAP não obrigatório, não é necessário comentar sobre SOAP vazio.
 
    ERROS CRÍTICOS: Listar erros que tirariam muitos pontos.
+   Erros críticos são aqueles que comprometem a segurança ou competência clínica real.
+   SOAP vazio NÃO é erro crítico em casos clínicos comuns.
 
    RESPOSTA MODELO: Escrever como o estudante deveria ter respondido (máx 5 linhas).
 
@@ -471,6 +633,14 @@ Retorne em JSON válido (sem markdown) com esta estrutura:
   "percentual": <0-100>,
   "classificacao": "<Excelente|Bom|Regular|Insuficiente>",
   "justificativaNota": "<uma linha explicando a nota>",
+  "objetivosCumpridos": {
+    "comunicacao": ["cumprimento ao paciente", "apresentação profissional", "..."],
+    "anamnese": ["perguntou sobre duração dos sintomas", "investigou febre", "..."],
+    "exameFisico": ["avaliou sinais vitais", "realizou ausculta pulmonar", "palpou expansibilidade", "..."],
+    "examesComplementares": ["solicitou radiografia de tórax", "solicitou hemograma", "..."],
+    "raciocinioDiagnostico": ["hipótese de pneumonia", "considerou diagnósticos diferenciais", "..."],
+    "conduta": ["antibioticoterapia", "oxigenoterapia", "suporte hidroeletrolítico", "..."]
+  },
   "rubricaAvaliacao": [
     {
       "nome": "Comunicação e postura médica",
@@ -599,7 +769,23 @@ INSTRUÇÕES PARA PLANO DE ESTUDO:
 - Não use jargão muito avançado; use linguagem clara
 - NÃO crie conteúdo fora do escopo do caso
 
-RESPEITE RIGOROSAMENTE O FORMATO JSON. Retorne apenas o JSON válido, sem markdown.`;
+RESPEITE RIGOROSAMENTE O FORMATO JSON. Retorne apenas o JSON válido, sem markdown.
+
+INSTRUÇÕES FINAIS OBRIGATÓRIAS:
+
+1. RESPONDA EXCLUSIVAMENTE EM JSON VÁLIDO.
+2. NÃO USE MARKDOWN (sem \`\`\`json, sem \`\`\`, sem triple backticks).
+3. NÃO ESCREVA NENHUM TEXTO ANTES DO JSON.
+4. NÃO ESCREVA NENHUM TEXTO DEPOIS DO JSON.
+5. O JSON DEVE INICIAR COM { NA PRIMEIRA LINHA.
+6. O JSON DEVE TERMINAR COM } NA ÚLTIMA LINHA.
+7. TODOS OS CAMPOS OBRIGATÓRIOS DEVEM EXISTIR (não omita "rubricaAvaliacao", "anamnese", "exameFisico", etc).
+8. TODOS OS ARRAYS DEVEM EXISTIR (mesmo que vazios []).
+9. "rubricaAvaliacao" DEVE TER EXATAMENTE 6 ITENS (uma para cada competência).
+10. CADA ITEM DE RUBRICA DEVE TER: "nome", "pontosObtidos", "pontosMaximos", "acertos", "melhorias".
+11. "nota" DEVE SER A SOMA EXATA DE "pontosObtidos" EM TODOS OS ITENS DA RUBRICA (máximo 20).
+12. "percentual" DEVE SER (nota / 20) * 100.
+13. RESPONDA APENAS COM JSON VÁLIDO, NADA MAIS.`;
 }
 
 export function criarPromptAgentExames(

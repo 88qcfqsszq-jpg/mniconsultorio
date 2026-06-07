@@ -87,6 +87,7 @@ export interface CompetenciaAvaliacao {
   pontosMaximos: number;
   acertos: string[];
   melhorias: string[];
+  evidencias?: string[];
 }
 
 export interface ModeloSOAPItem {
@@ -140,6 +141,15 @@ export interface DiagnosticoFormulario {
   conduta: string;
 }
 
+export interface ObjetivosCumpridos {
+  comunicacao: string[];
+  anamnese: string[];
+  exameFisico: string[];
+  examesComplementares: string[];
+  raciocinioDiagnostico: string[];
+  conduta: string[];
+}
+
 export interface FeedbackOSCE {
   nota: number;
   percentual: number;
@@ -148,6 +158,7 @@ export interface FeedbackOSCE {
   tempoAtendimento: number;
 
   rubricaAvaliacao?: CompetenciaAvaliacao[];
+  objetivosCumpridos?: ObjetivosCumpridos;
 
   resumoCaso: {
     diagnosticoEsperado: string;
