@@ -358,6 +358,13 @@ export interface Caso {
   temaOSCE?: string;
   subtopicosOSCE?: string[];
 
+  // ECG 12 derivações
+  ecg?: {
+    indicado?: boolean;
+    padrao?: string;
+    observacao?: string;
+  };
+
   // Status de ativação
   ativo?: boolean;
 }

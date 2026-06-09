@@ -1,0 +1,263 @@
+import { ECGPattern } from './types'
+
+export const PADROES_ECG: ECGPattern[] = [
+  {
+    id: 'normal',
+    titulo: 'ECG Normal',
+    frequenciaCardiaca: 72,
+    ritmo: 'Sinusal regular',
+    eixo: 'Normal',
+    pr: '120-200 ms',
+    qrs: '80-120 ms',
+    qtc: '< 440 ms',
+    achados: [
+      { derivacao: 'Geral', achado: 'Sem alterações' },
+      { derivacao: 'Ritmo', achado: 'Sinusal regular' },
+      { derivacao: 'Frequência', achado: '60-100 bpm' },
+    ],
+    laudo:
+      'ECG dentro dos limites normais. Ritmo sinusal regular. Sem alterações de repolarização.',
+    derivacoesComSupra: [],
+    derivacoesComInfra: [],
+    derivacoesComInversaoT: [],
+    observacoesClinicas: ['ECG normal de repouso'],
+  },
+  {
+    id: 'iam_com_supra_inferior',
+    titulo: 'IAM com SUPRA de ST Inferior',
+    frequenciaCardiaca: 88,
+    ritmo: 'Sinusal',
+    eixo: 'Desvio para a esquerda',
+    pr: '160 ms',
+    qrs: '100 ms',
+    qtc: '450 ms',
+    achados: [
+      { derivacao: 'DII, DIII, aVF', achado: 'Supradesnivelamento de ST' },
+      { derivacao: 'DI, aVL', achado: 'Infradesnivelamento de ST' },
+      {
+        derivacao: 'V1-V3',
+        achado: 'Sem supradesnivelamento (descarta IAM anterior)',
+      },
+    ],
+    laudo:
+      'Supradesnivelamento de ST em derivações inferiores (DII, DIII, aVF), compatível com infarto agudo inferior. Infradesnivelamento recíproco em DI e aVL.',
+    derivacoesComSupra: ['DII', 'DIII', 'aVF'],
+    derivacoesComInfra: ['DI', 'aVL'],
+    derivacoesComInversaoT: ['DII', 'DIII', 'aVF'],
+    observacoesClinicas: [
+      'Compatível com oclusão de artéria coronária direita',
+      'Avaliar envolvimento de VD',
+      'Urgência: Intervenção coronária percutânea',
+    ],
+  },
+  {
+    id: 'iam_com_supra_anterior',
+    titulo: 'IAM com SUPRA de ST Anterior',
+    frequenciaCardiaca: 95,
+    ritmo: 'Sinusal',
+    eixo: 'Normal',
+    pr: '150 ms',
+    qrs: '110 ms',
+    qtc: '460 ms',
+    achados: [
+      { derivacao: 'V1-V4', achado: 'Supradesnivelamento de ST' },
+      { derivacao: 'DII, DIII, aVF', achado: 'Infradesnivelamento recíproco' },
+    ],
+    laudo:
+      'Supradesnivelamento de ST em derivações precordiais anteriores (V1-V4), compatível com infarto agudo anterior. Infradesnivelamento recíproco inferior.',
+    derivacoesComSupra: ['V1', 'V2', 'V3', 'V4'],
+    derivacoesComInfra: ['DII', 'DIII', 'aVF'],
+    derivacoesComInversaoT: ['V1', 'V2', 'V3', 'V4'],
+    observacoesClinicas: [
+      'Oclusão de artéria interventricular anterior (AIA)',
+      'Risco de insuficiência cardíaca e arritmias',
+      'Urgência: Reperfusão imediata indicada',
+    ],
+  },
+  {
+    id: 'iam_sem_supra',
+    titulo: 'IAM sem Supradesnivelamento de ST (NSTEMI)',
+    frequenciaCardiaca: 82,
+    ritmo: 'Sinusal',
+    eixo: 'Normal',
+    pr: '140 ms',
+    qrs: '95 ms',
+    qtc: '440 ms',
+    achados: [
+      { derivacao: 'V2-V4', achado: 'Infradesnivelamento de ST' },
+      { derivacao: 'Múltiplas derivações', achado: 'Inversão de onda T' },
+    ],
+    laudo:
+      'Infradesnivelamento de ST e inversão de onda T compatíveis com isquemia miocárdica subendocárdica. Sugestivo de NSTEMI.',
+    derivacoesComSupra: [],
+    derivacoesComInfra: ['V2', 'V3', 'V4'],
+    derivacoesComInversaoT: ['V2', 'V3', 'V4', 'DI', 'aVL'],
+    observacoesClinicas: [
+      'Avaliar marcadores de necrose miocárdica (troponina)',
+      'Elevar a vigilância clínica',
+      'Angiocoronariografia recomendada',
+    ],
+  },
+  {
+    id: 'angina_estavel',
+    titulo: 'Padrão de Angina Estável',
+    frequenciaCardiaca: 72,
+    ritmo: 'Sinusal regular',
+    eixo: 'Normal',
+    pr: '160 ms',
+    qrs: '90 ms',
+    qtc: '410 ms',
+    achados: [
+      { derivacao: 'Repouso', achado: 'ECG normal ou com alterações mínimas' },
+      { derivacao: 'Durante prova de esforço', achado: 'Infradesnivelamento de ST' },
+    ],
+    laudo:
+      'ECG de repouso pode estar normal. Alterações esperadas durante prova de esforço. Compatível com angina estável por lesão coronária fixa.',
+    derivacoesComSupra: [],
+    derivacoesComInfra: [],
+    derivacoesComInversaoT: [],
+    observacoesClinicas: [
+      'Sintomas desencadeados por esforço, aliviados em repouso',
+      'Prova de esforço para confirmação',
+      'Investigação de lesão coronária crítica',
+    ],
+  },
+  {
+    id: 'angina_instavel',
+    titulo: 'Padrão de Angina Instável',
+    frequenciaCardiaca: 88,
+    ritmo: 'Sinusal',
+    eixo: 'Normal',
+    pr: '150 ms',
+    qrs: '100 ms',
+    qtc: '430 ms',
+    achados: [
+      { derivacao: 'V2-V5', achado: 'Infradesnivelamento transitório de ST' },
+      { derivacao: 'Múltiplas derivações', achado: 'Inversão simétrica de T' },
+    ],
+    laudo:
+      'Infradesnivelamento de ST e inversão de onda T em derivações precordiais anteriores. Sugestivo de angina instável com isquemia miocárdica.',
+    derivacoesComSupra: [],
+    derivacoesComInfra: ['V2', 'V3', 'V4', 'V5'],
+    derivacoesComInversaoT: ['V2', 'V3', 'V4', 'V5'],
+    observacoesClinicas: [
+      'Risco intermediário-alto de eventos coronários',
+      'Hospitalização recomendada',
+      'Cinecoronariografia urgente',
+    ],
+  },
+  {
+    id: 'pericardite_aguda',
+    titulo: 'Pericardite Aguda',
+    frequenciaCardiaca: 85,
+    ritmo: 'Sinusal',
+    eixo: 'Normal',
+    pr: '140 ms',
+    qrs: '88 ms',
+    qtc: '420 ms',
+    achados: [
+      {
+        derivacao: 'Fase I (primeiras horas)',
+        achado: 'Supradesnivelamento de ST difuso',
+      },
+      {
+        derivacao: 'Fase I (primeiras horas)',
+        achado: 'Infradesnivelamento de PR',
+      },
+      { derivacao: 'Fase II (dias)', achado: 'Retorno ao nível de base' },
+    ],
+    laudo:
+      'Supradesnivelamento de ST difuso e infradesnivelamento de PR compatíveis com pericardite aguda em fase I. Sem alterações em derivações recíprocas DII.',
+    derivacoesComSupra: ['DI', 'DII', 'V2', 'V3', 'V4', 'V5', 'V6'],
+    derivacoesComInfra: [],
+    derivacoesComInversaoT: [],
+    observacoesClinicas: [
+      'Dor torácica pleurítica aliviada ao inclinar-se para frente',
+      'Atrito pericárdico ao exame',
+      'Ecocardiografia para avaliar derrame',
+    ],
+  },
+  {
+    id: 'fibrilacao_atrial',
+    titulo: 'Fibrilação Atrial',
+    frequenciaCardiaca: 120,
+    ritmo: 'Irregular',
+    eixo: 'Normal',
+    pr: 'Não visível (F-F irregular)',
+    qrs: '90 ms',
+    qtc: '380 ms',
+    achados: [
+      { derivacao: 'Geral', achado: 'Linha de base irregular com ondas f' },
+      { derivacao: 'Geral', achado: 'Complexos QRS irregulares e espaçados' },
+      { derivacao: 'V1', achado: 'Onda P substituída por onda f' },
+    ],
+    laudo:
+      'Fibrilação atrial com resposta ventricular rápida. Ritmo completamente irregular com ausência de ondas P distintas. Complexos QRS frequentes e irregulares.',
+    derivacoesComSupra: [],
+    derivacoesComInfra: [],
+    derivacoesComInversaoT: [],
+    observacoesClinicas: [
+      'Risco aumentado de acidente vascular cerebral',
+      'Anticoagulação recomendada',
+      'Controle da frequência cardíaca necessário',
+    ],
+  },
+  {
+    id: 'tep_sobrecarga_direita',
+    titulo: 'Tromboembolismo Pulmonar - Sobrecarga de VD',
+    frequenciaCardiaca: 110,
+    ritmo: 'Sinusal taquicárdico',
+    eixo: 'Desvio para a direita',
+    pr: '120 ms',
+    qrs: '120 ms',
+    qtc: '410 ms',
+    achados: [
+      { derivacao: 'V1-V3', achado: 'Infradesnivelamento de ST' },
+      { derivacao: 'DIII', achado: 'Inversão de onda T' },
+      { derivacao: 'S1Q3T3', achado: 'Padrão clássico (quando presente)' },
+    ],
+    laudo:
+      'Taquicardia sinusal com desvio do eixo para direita. Infradesnivelamento de ST em V1-V3 e inversão de T em DIII, compatível com sobrecarga ventricular direita por TEP.',
+    derivacoesComSupra: [],
+    derivacoesComInfra: ['V1', 'V2', 'V3', 'DIII'],
+    derivacoesComInversaoT: ['DIII', 'V1', 'V2'],
+    observacoesClinicas: [
+      'Dispneia aguda e dor torácica pleurítica',
+      'Angio-TC de pulmão urgente',
+      'Avaliação de risco para trombose',
+    ],
+  },
+  {
+    id: 'emergencia_hipertensiva_sobrecarga_ve',
+    titulo: 'Emergência Hipertensiva - Sobrecarga de VE',
+    frequenciaCardiaca: 95,
+    ritmo: 'Sinusal',
+    eixo: 'Desvio para a esquerda',
+    pr: '160 ms',
+    qrs: '110 ms',
+    qtc: '450 ms',
+    achados: [
+      {
+        derivacao: 'DI, aVL, V5, V6',
+        achado: 'Voltagem aumentada (critério de Sokolow)',
+      },
+      { derivacao: 'DI, aVL, V5, V6', achado: 'Inversão de onda T (strain) ' },
+      { derivacao: 'V1-V2', achado: 'Onda S profunda' },
+    ],
+    laudo:
+      'Hipertrofia ventricular esquerda com padrão de strain. Voltagem aumentada em derivações laterais com inversão de T, indicando sobrecarga de pressão crônica.',
+    derivacoesComSupra: [],
+    derivacoesComInfra: [],
+    derivacoesComInversaoT: ['DI', 'aVL', 'V5', 'V6'],
+    observacoesClinicas: [
+      'Pressão arterial elevada cronicamente',
+      'Avaliar para hipertensão secundária',
+      'Investigar lesão de órgão-alvo',
+      'Ecocardiografia para avaliar função sistólica',
+    ],
+  },
+]
+
+export function obterPadrao(id: string): ECGPattern | undefined {
+  return PADROES_ECG.find((p) => p.id === id)
+}

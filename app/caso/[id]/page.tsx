@@ -10,6 +10,7 @@ import FeedbackOSCE from "@/components/FeedbackOSCE";
 import LoadingRelatorio from "@/components/LoadingRelatorio";
 import PainelExamesComplementares from "@/components/PainelExamesComplementares";
 import ResumoAnamnese from "@/components/ResumoAnamnese";
+import SimuladorECG from "@/components/SimuladorECG";
 import { casosOSCE } from "@/data/casos-osce";
 import { event } from "@/lib/analytics";
 import type {
@@ -232,8 +233,8 @@ function CasoPageContent() {
     }
   };
 
-  const [abaAtiva, setAbaAtiva] = useState<"paciente" | "exame" | "exames" | "sinaisVitais">("paciente");
-  const [menuAtivo, setMenuAtivo] = useState<"paciente" | "exame" | "exames" | "sinaisVitais">("paciente");
+  const [abaAtiva, setAbaAtiva] = useState<"paciente" | "exame" | "exames" | "sinaisVitais" | "ecg">("paciente");
+  const [menuAtivo, setMenuAtivo] = useState<"paciente" | "exame" | "exames" | "sinaisVitais" | "ecg">("paciente");
   const [soap, setSOAP] = useState<FormularioSOAPType>({
     subjetivo: "",
     objetivo: "",
@@ -278,6 +279,7 @@ function CasoPageContent() {
     { id: "exame" as const, label: "Exame", icon: "🥼" },
     { id: "exames" as const, label: "Exames", icon: "🧪" },
     { id: "sinaisVitais" as const, label: "Sinais Vitais", icon: "📊" },
+    { id: "ecg" as const, label: "ECG", icon: "📈" },
   ];
 
   return (
@@ -344,6 +346,7 @@ function CasoPageContent() {
                   { id: "exame" as const, label: "Exame Físico", icon: "🥼" },
                   { id: "exames" as const, label: "Exames", icon: "🧪" },
                   { id: "sinaisVitais" as const, label: "Sinais Vitais", icon: "📊" },
+                  { id: "ecg" as const, label: "ECG", icon: "📈" },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -488,6 +491,8 @@ function CasoPageContent() {
                 )}
               </div>
             )}
+
+            {menuAtivo === "ecg" && <SimuladorECG padrao={caso?.ecg?.padrao} />}
           </div>
 
           {/* Coluna 3: Painel Direito Fixo (Avaliação Clínica) */}
