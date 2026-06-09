@@ -1,78 +1,79 @@
 import { ECGLeadPosition, ECGPlacementResult, ECGZone } from './types'
 
-// Zonas corretas para cada eletrodo (em porcentagem)
-// Baseado no posicionamento clássico do ECG com boneco real frontal
-// Eixo visual: RA fica à esquerda (x~28), LA fica à direita (x~72) porque vemos o paciente de frente
+// Gabarito definitivo de posicionamento dos eletrodos do ECG
+// Baseado no boneco anatômico real do Mini Consultório
+// Coordenadas em porcentagem da imagem
+// Observação: O paciente está de frente. A direita anatômica (RA, RL, V1) aparece à esquerda visual.
 const ECG_ZONES: ECGZone[] = [
   {
     lead: 'V1',
-    x: { min: 46, max: 50 },
-    y: { min: 31, max: 35 },
-    descricao: '4º espaço intercostal, borda esternal direita',
+    x: { min: 42, max: 52 },
+    y: { min: 25, max: 35 },
+    descricao: '4º espaço intercostal direito, junto à borda esternal direita do paciente',
     tolerancia: 5,
   },
   {
     lead: 'V2',
-    x: { min: 50, max: 54 },
-    y: { min: 31, max: 35 },
-    descricao: '4º espaço intercostal, borda esternal esquerda',
+    x: { min: 47, max: 57 },
+    y: { min: 25, max: 35 },
+    descricao: '4º espaço intercostal esquerdo, junto à borda esternal esquerda do paciente',
     tolerancia: 5,
   },
   {
     lead: 'V3',
-    x: { min: 53, max: 57 },
-    y: { min: 34, max: 38 },
+    x: { min: 50, max: 60 },
+    y: { min: 28, max: 38 },
     descricao: 'Entre V2 e V4',
     tolerancia: 5,
   },
   {
     lead: 'V4',
-    x: { min: 56, max: 60 },
-    y: { min: 37, max: 41 },
-    descricao: '5º espaço intercostal, linha hemiclavicular esquerda',
+    x: { min: 53, max: 63 },
+    y: { min: 31, max: 41 },
+    descricao: '5º espaço intercostal esquerdo, linha hemiclavicular esquerda',
     tolerancia: 5,
   },
   {
     lead: 'V5',
-    x: { min: 61, max: 65 },
-    y: { min: 37, max: 41 },
-    descricao: 'Linha axilar anterior esquerda, mesmo nível de V4',
+    x: { min: 58, max: 68 },
+    y: { min: 31, max: 41 },
+    descricao: 'Linha axilar anterior esquerda, no mesmo nível horizontal de V4',
     tolerancia: 5,
   },
   {
     lead: 'V6',
-    x: { min: 66, max: 70 },
-    y: { min: 37, max: 41 },
-    descricao: 'Linha axilar média esquerda, mesmo nível de V4',
+    x: { min: 63, max: 73 },
+    y: { min: 31, max: 41 },
+    descricao: 'Linha axilar média esquerda, no mesmo nível horizontal de V4 e V5',
     tolerancia: 5,
   },
   {
     lead: 'RA',
-    x: { min: 26, max: 30 },
-    y: { min: 46, max: 50 },
-    descricao: 'Membro superior direito visual (braço D do paciente)',
-    tolerancia: 6,
+    x: { min: 21, max: 39 },
+    y: { min: 46, max: 64 },
+    descricao: 'Membro superior direito do paciente (lado esquerdo visual)',
+    tolerancia: 9,
   },
   {
     lead: 'LA',
-    x: { min: 70, max: 74 },
-    y: { min: 46, max: 50 },
-    descricao: 'Membro superior esquerdo visual (braço E do paciente)',
-    tolerancia: 6,
+    x: { min: 61, max: 79 },
+    y: { min: 46, max: 64 },
+    descricao: 'Membro superior esquerdo do paciente (lado direito visual)',
+    tolerancia: 9,
   },
   {
     lead: 'RL',
-    x: { min: 41, max: 45 },
-    y: { min: 80, max: 84 },
-    descricao: 'Membro inferior direito (tornozelo D do paciente)',
-    tolerancia: 6,
+    x: { min: 33, max: 51 },
+    y: { min: 76, max: 94 },
+    descricao: 'Membro inferior direito do paciente (lado esquerdo visual)',
+    tolerancia: 9,
   },
   {
     lead: 'LL',
-    x: { min: 55, max: 59 },
-    y: { min: 80, max: 84 },
-    descricao: 'Membro inferior esquerdo (tornozelo E do paciente)',
-    tolerancia: 6,
+    x: { min: 49, max: 67 },
+    y: { min: 76, max: 94 },
+    descricao: 'Membro inferior esquerdo do paciente (lado direito visual)',
+    tolerancia: 9,
   },
 ]
 
@@ -150,72 +151,102 @@ export function validarPosicionamentoECG(
     }
   }
 
-  // Verificar problemas específicos
+  // Verificar problemas específicos e validações anatômicas
 
-  // 1. Possível inversão de membros (RA e LA trocados)
+  const V1 = eletrodos.find((e) => e.lead === 'V1')
+  const V2 = eletrodos.find((e) => e.lead === 'V2')
+  const V3 = eletrodos.find((e) => e.lead === 'V3')
+  const V4 = eletrodos.find((e) => e.lead === 'V4')
+  const V5 = eletrodos.find((e) => e.lead === 'V5')
+  const V6 = eletrodos.find((e) => e.lead === 'V6')
   const RA = eletrodos.find((e) => e.lead === 'RA')
   const LA = eletrodos.find((e) => e.lead === 'LA')
-  if (RA && LA && RA.isPlaced && LA.isPlaced) {
-    // Se RA está muito à esquerda (x < 50) e LA está muito à direita (x > 50)
-    if (RA.x < 50 && LA.x > 50) {
-      temInversaoMembros = true
-      mensagensTecnicas.push('⚠️ Possível inversão de eletrodos RA/LA detectada')
+  const RL = eletrodos.find((e) => e.lead === 'RL')
+  const LL = eletrodos.find((e) => e.lead === 'LL')
+
+  // 1. Validação: Inversão de V1 e V2
+  if (V1 && V2 && V1.isPlaced && V2.isPlaced) {
+    if (V1.x > V2.x) {
+      // V1 deveria estar mais à esquerda (menor x) que V2
+      mensagensTecnicas.push(
+        '⚠️ Possível inversão de V1 e V2. V1 deve ficar à direita do esterno do paciente (mais à esquerda) e V2 à esquerda do esterno (mais à direita).'
+      )
     }
   }
 
-  // 2. Possível posicionamento alto de V1/V2 (y < 32)
-  const V1 = eletrodos.find((e) => e.lead === 'V1')
-  const V2 = eletrodos.find((e) => e.lead === 'V2')
-  if ((V1 && V1.isPlaced && V1.y < 32) || (V2 && V2.isPlaced && V2.y < 32)) {
-    temPosicionamentoAltoV1V2 = true
+  // 2. Validação: V4, V5, V6 muito agrupados (falta progressão lateral)
+  if (V4 && V5 && V6 && V4.isPlaced && V5.isPlaced && V6.isPlaced) {
+    const V4V5dist = Math.abs(V5.x - V4.x)
+    const V5V6dist = Math.abs(V6.x - V5.x)
+
+    // Devem avançar progressivamente para a esquerda (~5% cada)
+    if (V4V5dist < 2 || V5V6dist < 2) {
+      mensagensTecnicas.push(
+        '⚠️ V4, V5 e V6 devem seguir lateralmente no mesmo nível horizontal, da linha hemiclavicular para as linhas axilares.'
+      )
+    }
+  }
+
+  // 3. Validação: V5 ou V6 muito mediais (não avançaram para a esquerda o suficiente)
+  if (V5 && V5.isPlaced && V5.x < 56) {
     mensagensTecnicas.push(
-      '⚠️ V1/V2 podem estar posicionados muito alto (verificar 4º espaço)'
+      '⚠️ V5 está posicionado muito medialmente. Deve ser posicionado mais lateralmente no hemitórax esquerdo do paciente.'
+    )
+  }
+  if (V6 && V6.isPlaced && V6.x < 61) {
+    mensagensTecnicas.push(
+      '⚠️ V6 está posicionado muito medialmente. Deve ser posicionado mais lateralmente no hemitórax esquerdo do paciente (linha axilar média).'
     )
   }
 
-  // 3. Possível troca ou desordem de V3-V6
+  // 4. Validação: Inversão de RA e LA (membros superiores)
+  if (RA && LA && RA.isPlaced && LA.isPlaced) {
+    if (RA.x > LA.x) {
+      // RA deveria estar à esquerda (menor x) e LA à direita (maior x)
+      temInversaoMembros = true
+      mensagensTecnicas.push(
+        '⚠️ Possível inversão dos eletrodos dos membros superiores. RA deve ficar no membro direito (lado esquerdo visual) e LA no membro esquerdo (lado direito visual).'
+      )
+    }
+  }
+
+  // 5. Validação: Inversão de RL e LL (membros inferiores)
+  if (RL && LL && RL.isPlaced && LL.isPlaced) {
+    if (RL.x > LL.x) {
+      // RL deveria estar à esquerda (menor x) e LL à direita (maior x)
+      mensagensTecnicas.push(
+        '⚠️ Possível inversão dos eletrodos dos membros inferiores. RL deve ficar no membro inferior direito (lado esquerdo visual) e LL no membro inferior esquerdo (lado direito visual).'
+      )
+    }
+  }
+
+  // 6. Validação: V4, V5 e V6 no mesmo nível horizontal
   const precordialOrdem = ['V3', 'V4', 'V5', 'V6']
   const precordiaisColocadas = eletrodos
     .filter((e) => precordialOrdem.includes(e.lead) && e.isPlaced)
     .map((e) => e.lead)
 
+  if (precordiaisColocadas.includes('V4') && precordiaisColocadas.includes('V5') && precordiaisColocadas.includes('V6')) {
+    const ysV4V5V6 = [V4!.y, V5!.y, V6!.y]
+    const ysDiferenca = Math.max(...ysV4V5V6) - Math.min(...ysV4V5V6)
+
+    if (ysDiferenca > 8) {
+      temTrocaOuDesordemPrecordiais = true
+      mensagensTecnicas.push(
+        '⚠️ A linha precordial lateral deve manter V4, V5 e V6 no mesmo nível horizontal (diferença máxima de 8%).'
+      )
+    }
+  }
+
+  // 7. Verificação clássica: desordem geral
   if (precordiaisColocadas.length >= 3) {
-    // Verificar se y está consistente (mesmo nível)
     const ysV3V6 = precordiaisColocadas.map(
       (lead) => eletrodos.find((e) => e.lead === lead)?.y
     )
     const ysDiferenca = Math.max(...(ysV3V6 as number[])) - Math.min(...(ysV3V6 as number[]))
 
-    if (ysDiferenca > 15) {
+    if (ysDiferenca > 12) {
       temTrocaOuDesordemPrecordiais = true
-      mensagensTecnicas.push(
-        '⚠️ V3-V6 podem estar em ordem incorreta (devem estar no mesmo nível)'
-      )
-    }
-
-    // Verificar ordem X (V3 > V4 > V5 > V6)
-    const posicoes: { [key: string]: number } = {}
-    precordiaisColocadas.forEach((lead) => {
-      posicoes[lead] = eletrodos.find((e) => e.lead === lead)?.x || 0
-    })
-
-    const V3pos = posicoes['V3'] ?? 0
-    const V4pos = posicoes['V4'] ?? 0
-    const V5pos = posicoes['V5'] ?? 0
-    const V6pos = posicoes['V6'] ?? 0
-
-    if (V3pos < V4pos && V4pos < V5pos && V5pos < V6pos) {
-      // Ordem esperada (aumenta para esquerda, então x diminui)
-      // Na verdade, é o oposto: V3 > V4 > V5 > V6 em x
-      // Vou verificar apenas se não estão completamente fora de ordem
-    } else if (precordiaisColocadas.length === 4) {
-      // Se temos todos, verificar
-      if (!(V3pos > V4pos && V4pos > V5pos && V5pos > V6pos)) {
-        temTrocaOuDesordemPrecordiais = true
-        mensagensTecnicas.push(
-          '⚠️ V3-V6 podem estar fora de ordem (esquerda para direita)'
-        )
-      }
     }
   }
 
