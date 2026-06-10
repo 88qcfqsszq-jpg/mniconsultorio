@@ -8,12 +8,34 @@ export type Categoria = 'inspecao' | 'palpacao' | 'pulsos' | 'manobras' | 'medid
 
 export type PadraoMembrosInferiores = 'normal' | 'daop' | 'tvp' | 'tep' | 'insuficiencia_venosa' | 'ulcera_arterial' | 'ulcera_venosa'
 
+export type RegiaoMembroInferior =
+  | 'coxa_direita'
+  | 'coxa_esquerda'
+  | 'regiao_poplitea_direita'
+  | 'regiao_poplitea_esquerda'
+  | 'panturrilha_direita'
+  | 'panturrilha_esquerda'
+  | 'tornozelo_direito'
+  | 'tornozelo_esquerdo'
+  | 'maleolo_medial_direito'
+  | 'maleolo_medial_esquerdo'
+  | 'dorso_pe_direito'
+  | 'dorso_pe_esquerdo'
+  | 'planta_pe_direito'
+  | 'planta_pe_esquerdo'
+  | 'halux_direito'
+  | 'halux_esquerdo'
+  | 'trajeto_venoso_superficial_direito'
+  | 'trajeto_venoso_superficial_esquerdo'
+
 export interface AchadoMembrosInferiores {
   id: string
   titulo: string
   descricao: string
   categoria: Categoria
   lado?: Lado
+  regiao?: RegiaoMembroInferior
+  acaoRealizada?: string
 }
 
 export interface ResultadoPulso {
@@ -51,4 +73,27 @@ export interface AcaoMembrosInferiores {
   descricao: string
   aba: 'inspecao' | 'pulsos' | 'manobras' | 'medidas' | 'exames'
   funcao: (padrao: PadraoMembrosInferiores) => AchadoMembrosInferiores | AchadoMembrosInferiores[] | null
+}
+
+export interface AcaoBuscaAtiva {
+  id: string
+  label: string
+  categoria: Categoria
+  regioesPermitidas: RegiaoMembroInferior[]
+}
+
+export interface ResultadoBuscaAtiva {
+  id: string
+  regiao: RegiaoMembroInferior
+  acaoId: string
+  acaoLabel: string
+  resultado: string
+  alterado?: boolean
+}
+
+export interface DefinicaoRegiaoMembro {
+  id: RegiaoMembroInferior
+  nome: string
+  lado: 'direito' | 'esquerdo'
+  acoesDisponiveis: AcaoBuscaAtiva[]
 }
