@@ -86,6 +86,47 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
     setEcgGerado(false)
   }
 
+  // Determinar cores dos eletrodos baseado no tipo
+  function getCorEletrodo(id: string, isPlaced: boolean) {
+    // Braços: amarelo
+    if (id === 'RA' || id === 'LA') {
+      if (isPlaced) {
+        return 'bg-yellow-300 border-yellow-500 text-yellow-900'
+      }
+      return 'bg-yellow-100 border border-yellow-400 text-yellow-700 hover:bg-yellow-200'
+    }
+
+    // Pernas: preto
+    if (id === 'RL' || id === 'LL') {
+      if (isPlaced) {
+        return 'bg-slate-800 border-slate-900 text-white'
+      }
+      return 'bg-slate-900 border border-slate-950 text-white hover:bg-slate-800'
+    }
+
+    // Precordiais: vermelho (padrão)
+    if (isPlaced) {
+      return 'bg-green-100 border border-green-400 text-green-800'
+    }
+    return 'bg-red-100 border border-red-300 text-red-700 hover:bg-red-200'
+  }
+
+  // Determinar cores dos eletrodos posicionados no boneco
+  function getCorEletrodoPosicionado(id: string) {
+    // Braços: amarelo
+    if (id === 'RA' || id === 'LA') {
+      return 'bg-yellow-400 border-yellow-600'
+    }
+
+    // Pernas: preto
+    if (id === 'RL' || id === 'LL') {
+      return 'bg-slate-950 border-slate-950'
+    }
+
+    // Precordiais: vermelho
+    return 'bg-red-500 border-red-700'
+  }
+
   const eletrodosColocados = eletrodos.filter((e) => e.isPlaced).length
 
   // Fechar com tecla ESC
@@ -198,9 +239,8 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
                   {eletrodos
                     .filter((el) => el.isPlaced)
                     .map((el) => {
-                      const isVLead = el.lead.startsWith('V')
-                      const isMembroLead = ['RA', 'LA', 'RL', 'LL'].includes(el.lead)
-                      const bgColor = isVLead ? 'bg-red-500 border-red-700' : 'bg-blue-500 border-blue-700'
+                      const bgColor = getCorEletrodoPosicionado(el.lead)
+                      const textColor = (el.lead === 'RA' || el.lead === 'LA') ? 'text-yellow-900' : 'text-white'
 
                       return (
                         <div
@@ -211,7 +251,7 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
                             top: `${el.y}%`,
                             transform: 'translate(-50%, -50%)',
                           }}
-                          className={`w-7 h-7 ${bgColor} rounded-full border-2 flex items-center justify-center text-white text-[10px] font-bold cursor-move hover:scale-110 transition-transform shadow-lg z-10`}
+                          className={`w-7 h-7 ${bgColor} rounded-full border-2 flex items-center justify-center ${textColor} text-[10px] font-bold cursor-move hover:scale-110 transition-transform shadow-lg z-10`}
                           draggable
                           onDragStart={(e) => handleDragStart(el.lead, e)}
                           title={`${el.lead}`}
@@ -263,7 +303,7 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
               {/* Membros - RA, LA, RL, LL */}
               <div className="bg-white rounded-lg border border-slate-200 p-3">
                 <h4 className="text-xs font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Membros
+                  <span className="w-2 h-2 bg-slate-400 rounded-full"></span> Membros
                 </h4>
                 <div className="grid grid-cols-2 gap-1">
                   {['RA', 'LA', 'RL', 'LL'].map((lead) => {
@@ -275,11 +315,7 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
                         key={lead}
                         draggable
                         onDragStart={(e) => handleDragStart(lead as ECGLead, e)}
-                        className={`p-2 rounded text-xs font-bold text-center cursor-move transition-all ${
-                          isPlaced
-                            ? 'bg-green-100 border border-green-400 text-green-800'
-                            : 'bg-blue-100 border border-blue-300 text-blue-700 hover:bg-blue-200'
-                        }`}
+                        className={`p-2 rounded text-xs font-bold text-center cursor-move transition-all ${getCorEletrodo(lead, isPlaced || false)}`}
                       >
                         {lead}
                       </div>
