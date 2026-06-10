@@ -1,203 +1,357 @@
 // Coordenadas das regiões clicáveis em porcentagem
-// Baseado em vista anterior do paciente
-// IMPORTANTE: direita/esquerda refere-se ao lado anatômico do paciente
-// Na tela: lado direito do paciente aparece à esquerda visual
+// Baseado em vistas frontal e posterior do paciente
 
-export interface RegiaoCoordenada {
+export interface RegiaoVisualMI {
   id: string
   label: string
+  vista: 'frontal' | 'posterior'
   x: number // porcentagem desde esquerda
   y: number // porcentagem desde topo
   width: number // largura em porcentagem
   height: number // altura em porcentagem
 }
 
-export const REGIOES_MEMBROS_INFERIORES: RegiaoCoordenada[] = [
-  // COXAS
+// ===== VISTA FRONTAL =====
+export const REGIOES_FRONTAIS_MEMBROS_INFERIORES: RegiaoVisualMI[] = [
   {
-    id: 'coxa_direita',
+    id: 'frontal_coxa_direita',
     label: 'Coxa direita',
-    x: 22,
-    y: 12,
-    width: 22,
-    height: 26,
+    vista: 'frontal',
+    x: 24,
+    y: 4,
+    width: 20,
+    height: 31,
   },
   {
-    id: 'coxa_esquerda',
+    id: 'frontal_coxa_esquerda',
     label: 'Coxa esquerda',
+    vista: 'frontal',
     x: 56,
-    y: 12,
-    width: 22,
+    y: 4,
+    width: 20,
+    height: 31,
+  },
+  {
+    id: 'frontal_joelho_direito',
+    label: 'Joelho direito',
+    vista: 'frontal',
+    x: 25,
+    y: 34,
+    width: 19,
+    height: 12,
+  },
+  {
+    id: 'frontal_joelho_esquerdo',
+    label: 'Joelho esquerdo',
+    vista: 'frontal',
+    x: 56,
+    y: 34,
+    width: 19,
+    height: 12,
+  },
+  {
+    id: 'frontal_perna_direita',
+    label: 'Perna direita',
+    vista: 'frontal',
+    x: 26,
+    y: 45,
+    width: 20,
     height: 26,
   },
-
-  // JOELHOS (como parte da transição)
   {
-    id: 'joelho_direito',
-    label: 'Joelho direito',
-    x: 28,
-    y: 37,
-    width: 10,
-    height: 8,
+    id: 'frontal_perna_esquerda',
+    label: 'Perna esquerda',
+    vista: 'frontal',
+    x: 54,
+    y: 45,
+    width: 20,
+    height: 26,
   },
   {
-    id: 'joelho_esquerdo',
-    label: 'Joelho esquerdo',
-    x: 62,
-    y: 37,
-    width: 10,
-    height: 8,
-  },
-
-  // REGIÃO POPLÍTEA (posterior ao joelho)
-  {
-    id: 'regiao_poplitea_direita',
-    label: 'Região poplítea direita',
-    x: 28,
-    y: 38,
-    width: 10,
-    height: 7,
-  },
-  {
-    id: 'regiao_poplitea_esquerda',
-    label: 'Região poplítea esquerda',
-    x: 62,
-    y: 38,
-    width: 10,
-    height: 7,
-  },
-
-  // PANTURRILHAS
-  {
-    id: 'panturrilha_direita',
-    label: 'Panturrilha direita',
-    x: 26,
-    y: 44,
-    width: 14,
-    height: 28,
-  },
-  {
-    id: 'panturrilha_esquerda',
-    label: 'Panturrilha esquerda',
-    x: 60,
-    y: 44,
-    width: 14,
-    height: 28,
-  },
-
-  // TORNOZELOS
-  {
-    id: 'tornozelo_direito',
+    id: 'frontal_tornozelo_direito',
     label: 'Tornozelo direito',
-    x: 28,
-    y: 71,
-    width: 10,
-    height: 6,
+    vista: 'frontal',
+    x: 27,
+    y: 70,
+    width: 19,
+    height: 10,
   },
   {
-    id: 'tornozelo_esquerdo',
+    id: 'frontal_tornozelo_esquerdo',
     label: 'Tornozelo esquerdo',
-    x: 62,
-    y: 71,
-    width: 10,
-    height: 6,
+    vista: 'frontal',
+    x: 54,
+    y: 70,
+    width: 19,
+    height: 10,
   },
-
-  // MALÉOLO MEDIAL (interno)
   {
-    id: 'maleolo_medial_direito',
+    id: 'frontal_maleolo_medial_direito',
     label: 'Maléolo medial direito',
-    x: 37,
-    y: 74,
-    width: 6,
-    height: 5,
+    vista: 'frontal',
+    x: 39,
+    y: 73,
+    width: 8,
+    height: 8,
   },
   {
-    id: 'maleolo_medial_esquerdo',
+    id: 'frontal_maleolo_medial_esquerdo',
     label: 'Maléolo medial esquerdo',
-    x: 57,
-    y: 74,
-    width: 6,
-    height: 5,
+    vista: 'frontal',
+    x: 53,
+    y: 73,
+    width: 8,
+    height: 8,
   },
-
-  // DORSO DO PÉ
   {
-    id: 'dorso_pe_direito',
+    id: 'frontal_dorso_pe_direito',
     label: 'Dorso do pé direito',
-    x: 22,
-    y: 76,
-    width: 16,
-    height: 12,
+    vista: 'frontal',
+    x: 13,
+    y: 79,
+    width: 33,
+    height: 14,
   },
   {
-    id: 'dorso_pe_esquerdo',
+    id: 'frontal_dorso_pe_esquerdo',
     label: 'Dorso do pé esquerdo',
-    x: 62,
-    y: 76,
-    width: 16,
-    height: 12,
-  },
-
-  // PLANTA DO PÉ
-  {
-    id: 'planta_pe_direito',
-    label: 'Planta do pé direito',
-    x: 22,
-    y: 87,
-    width: 16,
-    height: 8,
+    vista: 'frontal',
+    x: 54,
+    y: 79,
+    width: 33,
+    height: 14,
   },
   {
-    id: 'planta_pe_esquerdo',
-    label: 'Planta do pé esquerdo',
-    x: 62,
-    y: 87,
-    width: 16,
-    height: 8,
-  },
-
-  // HÁLUX (polegar do pé)
-  {
-    id: 'halux_direito',
+    id: 'frontal_halux_direito',
     label: 'Hálux direito',
-    x: 40,
-    y: 84,
-    width: 4,
-    height: 6,
+    vista: 'frontal',
+    x: 36,
+    y: 88,
+    width: 10,
+    height: 9,
   },
   {
-    id: 'halux_esquerdo',
+    id: 'frontal_halux_esquerdo',
     label: 'Hálux esquerdo',
-    x: 56,
-    y: 84,
-    width: 4,
-    height: 6,
+    vista: 'frontal',
+    x: 54,
+    y: 88,
+    width: 10,
+    height: 9,
   },
-
-  // TRAJETO VENOSO SUPERFICIAL
   {
-    id: 'trajeto_venoso_superficial_direito',
+    id: 'frontal_trajeto_venoso_superficial_direito',
     label: 'Trajeto venoso superficial direito',
-    x: 20,
-    y: 15,
+    vista: 'frontal',
+    x: 19,
+    y: 18,
     width: 8,
-    height: 55,
+    height: 54,
   },
   {
-    id: 'trajeto_venoso_superficial_esquerdo',
+    id: 'frontal_trajeto_venoso_superficial_esquerdo',
     label: 'Trajeto venoso superficial esquerdo',
-    x: 72,
-    y: 15,
+    vista: 'frontal',
+    x: 73,
+    y: 18,
     width: 8,
-    height: 55,
+    height: 54,
   },
 ]
 
-export function obterRegiaoCoordenada(regiaId: string): RegiaoCoordenada | undefined {
-  return REGIOES_MEMBROS_INFERIORES.find(r => r.id === regiaId)
+// ===== VISTA POSTERIOR =====
+export const REGIOES_POSTERIORES_MEMBROS_INFERIORES: RegiaoVisualMI[] = [
+  {
+    id: 'posterior_coxa_direita',
+    label: 'Coxa direita posterior',
+    vista: 'posterior',
+    x: 24,
+    y: 4,
+    width: 20,
+    height: 31,
+  },
+  {
+    id: 'posterior_coxa_esquerda',
+    label: 'Coxa esquerda posterior',
+    vista: 'posterior',
+    x: 56,
+    y: 4,
+    width: 20,
+    height: 31,
+  },
+  {
+    id: 'posterior_fossa_poplitea_direita',
+    label: 'Fossa poplítea direita',
+    vista: 'posterior',
+    x: 25,
+    y: 34,
+    width: 19,
+    height: 12,
+  },
+  {
+    id: 'posterior_fossa_poplitea_esquerda',
+    label: 'Fossa poplítea esquerda',
+    vista: 'posterior',
+    x: 56,
+    y: 34,
+    width: 19,
+    height: 12,
+  },
+  {
+    id: 'posterior_panturrilha_direita',
+    label: 'Panturrilha direita',
+    vista: 'posterior',
+    x: 25,
+    y: 44,
+    width: 21,
+    height: 28,
+  },
+  {
+    id: 'posterior_panturrilha_esquerda',
+    label: 'Panturrilha esquerda',
+    vista: 'posterior',
+    x: 54,
+    y: 44,
+    width: 21,
+    height: 28,
+  },
+  {
+    id: 'posterior_tendao_calcaneo_direito',
+    label: 'Tendão calcâneo direito',
+    vista: 'posterior',
+    x: 32,
+    y: 68,
+    width: 9,
+    height: 14,
+  },
+  {
+    id: 'posterior_tendao_calcaneo_esquerdo',
+    label: 'Tendão calcâneo esquerdo',
+    vista: 'posterior',
+    x: 59,
+    y: 68,
+    width: 9,
+    height: 14,
+  },
+  {
+    id: 'posterior_tornozelo_direito',
+    label: 'Tornozelo direito posterior',
+    vista: 'posterior',
+    x: 27,
+    y: 71,
+    width: 18,
+    height: 10,
+  },
+  {
+    id: 'posterior_tornozelo_esquerdo',
+    label: 'Tornozelo esquerdo posterior',
+    vista: 'posterior',
+    x: 55,
+    y: 71,
+    width: 18,
+    height: 10,
+  },
+  {
+    id: 'posterior_calcaneo_direito',
+    label: 'Calcâneo direito',
+    vista: 'posterior',
+    x: 27,
+    y: 79,
+    width: 19,
+    height: 13,
+  },
+  {
+    id: 'posterior_calcaneo_esquerdo',
+    label: 'Calcâneo esquerdo',
+    vista: 'posterior',
+    x: 55,
+    y: 79,
+    width: 19,
+    height: 13,
+  },
+  {
+    id: 'posterior_planta_pe_direito',
+    label: 'Base plantar direita',
+    vista: 'posterior',
+    x: 18,
+    y: 88,
+    width: 28,
+    height: 10,
+  },
+  {
+    id: 'posterior_planta_pe_esquerdo',
+    label: 'Base plantar esquerda',
+    vista: 'posterior',
+    x: 55,
+    y: 88,
+    width: 28,
+    height: 10,
+  },
+  {
+    id: 'posterior_trajeto_venoso_superficial_direito',
+    label: 'Trajeto venoso superficial posterior direito',
+    vista: 'posterior',
+    x: 20,
+    y: 18,
+    width: 8,
+    height: 54,
+  },
+  {
+    id: 'posterior_trajeto_venoso_superficial_esquerdo',
+    label: 'Trajeto venoso superficial posterior esquerdo',
+    vista: 'posterior',
+    x: 72,
+    y: 18,
+    width: 8,
+    height: 54,
+  },
+]
+
+// ===== MAPEAMENTO VISUAL → CLÍNICO =====
+export const MAPA_REGIAO_VISUAL_PARA_CLINICA: Record<string, string> = {
+  frontal_coxa_direita: 'coxa_direita',
+  frontal_coxa_esquerda: 'coxa_esquerda',
+  frontal_joelho_direito: 'joelho_direito',
+  frontal_joelho_esquerdo: 'joelho_esquerdo',
+  frontal_perna_direita: 'panturrilha_direita',
+  frontal_perna_esquerda: 'panturrilha_esquerda',
+  frontal_tornozelo_direito: 'tornozelo_direito',
+  frontal_tornozelo_esquerdo: 'tornozelo_esquerdo',
+  frontal_maleolo_medial_direito: 'maleolo_medial_direito',
+  frontal_maleolo_medial_esquerdo: 'maleolo_medial_esquerdo',
+  frontal_dorso_pe_direito: 'dorso_pe_direito',
+  frontal_dorso_pe_esquerdo: 'dorso_pe_esquerdo',
+  frontal_halux_direito: 'halux_direito',
+  frontal_halux_esquerdo: 'halux_esquerdo',
+  frontal_trajeto_venoso_superficial_direito: 'trajeto_venoso_superficial_direito',
+  frontal_trajeto_venoso_superficial_esquerdo: 'trajeto_venoso_superficial_esquerdo',
+
+  posterior_coxa_direita: 'coxa_direita',
+  posterior_coxa_esquerda: 'coxa_esquerda',
+  posterior_fossa_poplitea_direita: 'regiao_poplitea_direita',
+  posterior_fossa_poplitea_esquerda: 'regiao_poplitea_esquerda',
+  posterior_panturrilha_direita: 'panturrilha_direita',
+  posterior_panturrilha_esquerda: 'panturrilha_esquerda',
+  posterior_tendao_calcaneo_direito: 'tornozelo_direito',
+  posterior_tendao_calcaneo_esquerdo: 'tornozelo_esquerdo',
+  posterior_tornozelo_direito: 'tornozelo_direito',
+  posterior_tornozelo_esquerdo: 'tornozelo_esquerdo',
+  posterior_calcaneo_direito: 'planta_pe_direito',
+  posterior_calcaneo_esquerdo: 'planta_pe_esquerdo',
+  posterior_planta_pe_direito: 'planta_pe_direito',
+  posterior_planta_pe_esquerdo: 'planta_pe_esquerdo',
+  posterior_trajeto_venoso_superficial_direito: 'trajeto_venoso_superficial_direito',
+  posterior_trajeto_venoso_superficial_esquerdo: 'trajeto_venoso_superficial_esquerdo',
 }
 
-export function obterRegioesPorLado(lado: 'direito' | 'esquerdo'): RegiaoCoordenada[] {
-  return REGIOES_MEMBROS_INFERIORES.filter(r => r.id.includes(lado))
+export function obterRegiaoClinicaDesdeVisual(regiaoVisualId: string): string | undefined {
+  return MAPA_REGIAO_VISUAL_PARA_CLINICA[regiaoVisualId]
+}
+
+export function obterRegiaoVisualFrontal(id: string): RegiaoVisualMI | undefined {
+  return REGIOES_FRONTAIS_MEMBROS_INFERIORES.find(r => r.id === id)
+}
+
+export function obterRegiaoVisualPosterior(id: string): RegiaoVisualMI | undefined {
+  return REGIOES_POSTERIORES_MEMBROS_INFERIORES.find(r => r.id === id)
 }

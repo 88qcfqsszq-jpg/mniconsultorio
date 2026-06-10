@@ -1,9 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { RegiaoMembroInferior, AchadoMembrosInferiores, PadraoMembrosInferiores } from '@/lib/membros-inferiores/types'
+import { AchadoMembrosInferiores, PadraoMembrosInferiores, RegiaoMembroInferior } from '@/lib/membros-inferiores/types'
 import { obterRegiaoMembro } from '@/lib/membros-inferiores/regioes-buscaativa'
 import { obterResultadoBuscaAtiva } from '@/lib/membros-inferiores/resultados-buscaativa'
+import {
+  REGIOES_FRONTAIS_MEMBROS_INFERIORES,
+  REGIOES_POSTERIORES_MEMBROS_INFERIORES,
+} from '@/lib/membros-inferiores/coordenadas'
 import PernasInterativas from '@/components/membros-inferiores/PernasInterativas'
 
 interface PacienteInterativoProps {
@@ -17,22 +21,41 @@ export default function PacienteInterativoMembrosInferiores({
   onAcaoRealizada,
   achadosJaRegistrados,
 }: PacienteInterativoProps) {
-  const [regiaoSelecionada, setRegiaoSelecionada] = useState<RegiaoMembroInferior | null>(null)
+  const [regiaoVisualSelecionada, setRegiaoVisualSelecionada] = useState<string | null>(null)
+  const [regiaoClinicaSelecionada, setRegiaoClinicaSelecionada] = useState<RegiaoMembroInferior | null>(null)
+  const [labelVisualSelecionado, setLabelVisualSelecionado] = useState<string | null>(null)
 
-  const regiao = regiaoSelecionada ? obterRegiaoMembro(regiaoSelecionada) : null
+  // Buscar label visual a partir do ID visual
+  const obterLabelVisual = (regiaoVisualId: string): string => {
+    const frontal = REGIOES_FRONTAIS_MEMBROS_INFERIORES.find(r => r.id === regiaoVisualId)
+    if (frontal) return frontal.label
+
+    const posterior = REGIOES_POSTERIORES_MEMBROS_INFERIORES.find(r => r.id === regiaoVisualId)
+    if (posterior) return posterior.label
+
+    return 'Desconhecido'
+  }
+
+  const handleSelecionarRegiao = (regiaoVisualId: string, regiaoClinicaId: string) => {
+    setRegiaoVisualSelecionada(regiaoVisualId)
+    setRegiaoClinicaSelecionada(regiaoClinicaId as RegiaoMembroInferior)
+    setLabelVisualSelecionado(obterLabelVisual(regiaoVisualId))
+  }
+
+  const regiao = regiaoClinicaSelecionada ? obterRegiaoMembro(regiaoClinicaSelecionada) : null
   const acoes = regiao ? regiao.acoesDisponiveis : []
 
   const handleAcao = (acaoId: string, acaoLabel: string) => {
-    if (!regiaoSelecionada) return
+    if (!regiaoClinicaSelecionada) return
 
-    const resultado = obterResultadoBuscaAtiva(padrao, regiaoSelecionada, acaoId)
+    const resultado = obterResultadoBuscaAtiva(padrao, regiaoClinicaSelecionada, acaoId)
 
     const achado: AchadoMembrosInferiores = {
-      id: `${regiaoSelecionada}-${acaoId}-${Date.now()}`,
-      titulo: `${regiao?.nome} — ${acaoLabel}`,
+      id: `${regiaoClinicaSelecionada}-${acaoId}-${Date.now()}`,
+      titulo: `${labelVisualSelecionado} — ${acaoLabel}`,
       descricao: resultado.resultado,
       categoria: 'inspecao',
-      regiao: regiaoSelecionada,
+      regiao: regiaoClinicaSelecionada,
       acaoRealizada: acaoLabel,
     }
 
@@ -41,23 +64,27 @@ export default function PacienteInterativoMembrosInferiores({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Ilustração interativa das pernas */}
+      {/* Ilustração interativa das pernas (duas imagens) */}
       <div className="w-full">
         <PernasInterativas
-          regiaoSelecionada={regiaoSelecionada}
-          onRegiaoClicada={setRegiaoSelecionada}
+          regiaoSelecionada={regiaoVisualSelecionada}
+          onSelecionarRegiao={handleSelecionarRegiao}
         />
       </div>
 
       {/* Painel de ações */}
-      {regiaoSelecionada && regiao ? (
+      {regiaoVisualSelecionada && regiaoClinicaSelecionada && regiao ? (
         <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="font-bold text-slate-800 text-sm">
-              📍 {regiao.nome}
+              📍 {labelVisualSelecionado}
             </h4>
             <button
-              onClick={() => setRegiaoSelecionada(null)}
+              onClick={() => {
+                setRegiaoVisualSelecionada(null)
+                setRegiaoClinicaSelecionada(null)
+                setLabelVisualSelecionado(null)
+              }}
               className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
             >
               ✕ Desselecionar

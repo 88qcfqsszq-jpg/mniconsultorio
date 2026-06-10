@@ -1,46 +1,36 @@
 'use client'
 
-import Image from 'next/image'
-import { RegiaoMembroInferior } from '@/lib/membros-inferiores/types'
-import { REGIOES_MEMBROS_INFERIORES } from '@/lib/membros-inferiores/coordenadas'
+import { REGIOES_FRONTAIS_MEMBROS_INFERIORES, REGIOES_POSTERIORES_MEMBROS_INFERIORES } from '@/lib/membros-inferiores/coordenadas'
+import MapaImagemMI from '@/components/membros-inferiores/MapaImagemMI'
 
 interface PernasInterativasProps {
-  regiaoSelecionada: RegiaoMembroInferior | null
-  onRegiaoClicada: (regiao: RegiaoMembroInferior) => void
+  regiaoSelecionada: string | null
+  onSelecionarRegiao: (regiaoVisualId: string, regiaoClinicaId: string) => void
 }
 
 export default function PernasInterativas({
   regiaoSelecionada,
-  onRegiaoClicada,
+  onSelecionarRegiao,
 }: PernasInterativasProps) {
   return (
-    <div className="relative mx-auto aspect-[3/5] w-full max-w-sm rounded-xl bg-slate-50 border border-slate-200 overflow-hidden">
-      {/* Imagem base das pernas */}
-      <img
-        src="/images/boneco/pernas_frontal_base_hotspots.png"
-        alt="Ilustração frontal dos membros inferiores"
-        className="absolute inset-0 h-full w-full object-contain"
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {/* Vista Frontal */}
+      <MapaImagemMI
+        titulo="Frontal"
+        src="/images/boneco/pernas_frontal_realista.png"
+        regioes={REGIOES_FRONTAIS_MEMBROS_INFERIORES}
+        regiaoSelecionada={regiaoSelecionada}
+        onSelecionarRegiao={onSelecionarRegiao}
       />
 
-      {/* Hotspots clicáveis (invisíveis, mostram hover e seleção) */}
-      {REGIOES_MEMBROS_INFERIORES.map(regiao => (
-        <div
-          key={regiao.id}
-          onClick={() => onRegiaoClicada(regiao.id as RegiaoMembroInferior)}
-          className={`absolute rounded-lg border transition-all cursor-pointer ${
-            regiaoSelecionada === regiao.id
-              ? 'bg-blue-500/25 border-blue-500 shadow-md'
-              : 'border-transparent hover:bg-blue-400/15 hover:border-blue-400/50'
-          }`}
-          style={{
-            left: `${regiao.x}%`,
-            top: `${regiao.y}%`,
-            width: `${regiao.width}%`,
-            height: `${regiao.height}%`,
-          }}
-          title={regiao.label}
-        />
-      ))}
+      {/* Vista Posterior */}
+      <MapaImagemMI
+        titulo="Posterior"
+        src="/images/boneco/pernas_posterior_realista.png"
+        regioes={REGIOES_POSTERIORES_MEMBROS_INFERIORES}
+        regiaoSelecionada={regiaoSelecionada}
+        onSelecionarRegiao={onSelecionarRegiao}
+      />
     </div>
   )
 }
