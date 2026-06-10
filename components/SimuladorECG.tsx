@@ -88,20 +88,36 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
 
   // Determinar cores dos eletrodos baseado no tipo
   function getCorEletrodo(id: string, isPlaced: boolean) {
-    // Braços: amarelo
-    if (id === 'RA' || id === 'LA') {
+    // RA: vermelho
+    if (id === 'RA') {
+      if (isPlaced) {
+        return 'bg-red-300 border-red-500 text-red-900'
+      }
+      return 'bg-red-100 border border-red-400 text-red-700 hover:bg-red-200'
+    }
+
+    // LA: amarelo
+    if (id === 'LA') {
       if (isPlaced) {
         return 'bg-yellow-300 border-yellow-500 text-yellow-900'
       }
-      return 'bg-yellow-100 border border-yellow-400 text-yellow-700 hover:bg-yellow-200'
+      return 'bg-yellow-100 border border-yellow-400 text-yellow-900 hover:bg-yellow-200'
     }
 
-    // Pernas: preto
-    if (id === 'RL' || id === 'LL') {
+    // RL: preto
+    if (id === 'RL') {
       if (isPlaced) {
         return 'bg-slate-800 border-slate-900 text-white'
       }
       return 'bg-slate-900 border border-slate-950 text-white hover:bg-slate-800'
+    }
+
+    // LL: verde
+    if (id === 'LL') {
+      if (isPlaced) {
+        return 'bg-green-300 border-green-500 text-green-900'
+      }
+      return 'bg-green-100 border border-green-400 text-green-700 hover:bg-green-200'
     }
 
     // Precordiais: vermelho (padrão)
@@ -113,14 +129,24 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
 
   // Determinar cores dos eletrodos posicionados no boneco
   function getCorEletrodoPosicionado(id: string) {
-    // Braços: amarelo
-    if (id === 'RA' || id === 'LA') {
+    // RA: vermelho
+    if (id === 'RA') {
+      return 'bg-red-500 border-red-700'
+    }
+
+    // LA: amarelo
+    if (id === 'LA') {
       return 'bg-yellow-400 border-yellow-600'
     }
 
-    // Pernas: preto
-    if (id === 'RL' || id === 'LL') {
+    // RL: preto
+    if (id === 'RL') {
       return 'bg-slate-950 border-slate-950'
+    }
+
+    // LL: verde
+    if (id === 'LL') {
+      return 'bg-green-500 border-green-700'
     }
 
     // Precordiais: vermelho
@@ -240,7 +266,12 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
                     .filter((el) => el.isPlaced)
                     .map((el) => {
                       const bgColor = getCorEletrodoPosicionado(el.lead)
-                      const textColor = (el.lead === 'RA' || el.lead === 'LA') ? 'text-yellow-900' : 'text-white'
+                      let textColor = 'text-white'
+                      if (el.lead === 'LA') {
+                        textColor = 'text-yellow-900'
+                      } else if (el.lead === 'LL') {
+                        textColor = 'text-green-900'
+                      }
 
                       return (
                         <div
