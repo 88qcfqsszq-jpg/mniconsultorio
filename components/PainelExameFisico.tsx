@@ -4,7 +4,9 @@ import { useState } from "react";
 import { ManobraRealizada } from "@/lib/types";
 import BonecoVirtual from "@/components/BonecoVirtual";
 import MenuManobrasBoneco from "@/components/MenuManobrasBoneco";
+import ModalMembrosInferiores from "@/components/ModalMembrosInferiores";
 import { type Regiao } from "@/data/regioesBoneco";
+import { type PadraoMembrosInferiores } from "@/lib/membros-inferiores/types";
 
 interface PainelExameFisicoProps {
   caso: any;
@@ -76,6 +78,10 @@ export default function PainelExameFisico({
   // Boneco Virtual
   const [regiaoSelecionada, setRegiaoSelecionada] = useState<Regiao | null>(null);
   const [loadingBoneco, setLoadingBoneco] = useState(false);
+
+  // Modal Membros Inferiores
+  const [modalMembrosAberto, setModalMembrosAberto] = useState(false);
+  const padraoMembros = (caso?.membrosInferiores?.padrao || "normal") as PadraoMembrosInferiores;
 
   const handleManobraBoneco = async (textoManobra: string) => {
     if (!regiaoSelecionada || !textoManobra) return;
@@ -321,6 +327,15 @@ export default function PainelExameFisico({
                 <div className="p-4 space-y-3">
                   <p className="text-xs text-slate-400">{cat.exemplos}</p>
 
+                  {cat.id === "membros" && (
+                    <button
+                      onClick={() => setModalMembrosAberto(true)}
+                      className="w-full py-2.5 px-4 bg-purple-50 hover:bg-purple-100 border border-purple-300 rounded-xl font-semibold text-sm text-purple-800 transition-colors"
+                    >
+                      🔬 Avaliação completa
+                    </button>
+                  )}
+
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -361,6 +376,14 @@ export default function PainelExameFisico({
           );
         })}
       </div>
+
+      {/* Modal Membros Inferiores */}
+      {modalMembrosAberto && (
+        <ModalMembrosInferiores
+          padrao={padraoMembros}
+          onClose={() => setModalMembrosAberto(false)}
+        />
+      )}
     </div>
   );
 }
