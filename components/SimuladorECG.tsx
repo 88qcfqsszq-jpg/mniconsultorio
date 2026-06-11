@@ -233,7 +233,7 @@ export default function SimuladorECG({ padrao = 'normal', onClose }: SimuladorEC
                 >
                   {/* Boneco real frontal */}
                   <img
-                    src="/images/boneco/boneco-frente.png"
+                    src="/images/boneco/paciente-ecg.png"
                     alt="Paciente"
                     className="w-full h-full object-contain p-2"
                     draggable={false}

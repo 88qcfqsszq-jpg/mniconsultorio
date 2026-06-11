@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AchadoMembrosInferiores, PadraoMembrosInferiores, RegiaoMembroInferior } from '@/lib/membros-inferiores/types'
+import { AchadoMembrosInferiores, PadraoMembrosInferiores, RegiaoMembroInferior, PulsoArterialMI, PulsoPositionado } from '@/lib/membros-inferiores/types'
 import { obterRegiaoMembro } from '@/lib/membros-inferiores/regioes-buscaativa'
 import { obterResultadoBuscaAtiva } from '@/lib/membros-inferiores/resultados-buscaativa'
 import {
@@ -14,12 +14,20 @@ interface PacienteInterativoProps {
   padrao: PadraoMembrosInferiores
   onAcaoRealizada: (achado: AchadoMembrosInferiores) => void
   achadosJaRegistrados: AchadoMembrosInferiores[]
+  draggedPulso: PulsoArterialMI | null
+  onDropPulso: (xDrop: number, yDrop: number, vista: 'frontal' | 'posterior' | 'plantar') => void
+  resetCounter: number
+  pulsosDrop: PulsoPositionado[]
 }
 
 export default function PacienteInterativoMembrosInferiores({
   padrao,
   onAcaoRealizada,
   achadosJaRegistrados,
+  draggedPulso,
+  onDropPulso,
+  resetCounter,
+  pulsosDrop,
 }: PacienteInterativoProps) {
   const [regiaoVisualSelecionada, setRegiaoVisualSelecionada] = useState<string | null>(null)
   const [regiaoClinicaSelecionada, setRegiaoClinicaSelecionada] = useState<RegiaoMembroInferior | null>(null)
@@ -69,6 +77,10 @@ export default function PacienteInterativoMembrosInferiores({
         <PernasInterativas
           regiaoSelecionada={regiaoVisualSelecionada}
           onSelecionarRegiao={handleSelecionarRegiao}
+          draggedPulso={draggedPulso}
+          onDropPulso={onDropPulso}
+          resetCounter={resetCounter}
+          pulsosDrop={pulsosDrop}
         />
       </div>
 

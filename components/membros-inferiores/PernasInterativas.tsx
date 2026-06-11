@@ -5,16 +5,25 @@ import {
   REGIOES_POSTERIORES_MEMBROS_INFERIORES,
   REGIOES_BASE_PLANTAR_MEMBROS_INFERIORES,
 } from '@/lib/membros-inferiores/coordenadas'
+import { PulsoArterialMI, PulsoPositionado } from '@/lib/membros-inferiores/types'
 import MapaImagemMI from '@/components/membros-inferiores/MapaImagemMI'
 
 interface PernasInterativasProps {
   regiaoSelecionada: string | null
   onSelecionarRegiao: (regiaoVisualId: string, regiaoClinicaId: string) => void
+  draggedPulso: PulsoArterialMI | null
+  onDropPulso: (xDrop: number, yDrop: number, vista: 'frontal' | 'posterior' | 'plantar') => void
+  resetCounter: number
+  pulsosDrop: PulsoPositionado[]
 }
 
 export default function PernasInterativas({
   regiaoSelecionada,
   onSelecionarRegiao,
+  draggedPulso,
+  onDropPulso,
+  resetCounter,
+  pulsosDrop,
 }: PernasInterativasProps) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -25,6 +34,11 @@ export default function PernasInterativas({
         regioes={REGIOES_FRONTAIS_MEMBROS_INFERIORES}
         regiaoSelecionada={regiaoSelecionada}
         onSelecionarRegiao={onSelecionarRegiao}
+        vista="frontal"
+        draggedPulso={draggedPulso}
+        onDropPulso={onDropPulso}
+        resetCounter={resetCounter}
+        pulsosDrop={pulsosDrop}
       />
 
       {/* Vista Posterior */}
@@ -34,6 +48,11 @@ export default function PernasInterativas({
         regioes={REGIOES_POSTERIORES_MEMBROS_INFERIORES}
         regiaoSelecionada={regiaoSelecionada}
         onSelecionarRegiao={onSelecionarRegiao}
+        vista="posterior"
+        draggedPulso={draggedPulso}
+        onDropPulso={onDropPulso}
+        resetCounter={resetCounter}
+        pulsosDrop={pulsosDrop}
       />
 
       {/* Vista Base Plantar */}
@@ -43,6 +62,11 @@ export default function PernasInterativas({
         regioes={REGIOES_BASE_PLANTAR_MEMBROS_INFERIORES}
         regiaoSelecionada={regiaoSelecionada}
         onSelecionarRegiao={onSelecionarRegiao}
+        vista="plantar"
+        draggedPulso={draggedPulso}
+        onDropPulso={onDropPulso}
+        resetCounter={resetCounter}
+        pulsosDrop={pulsosDrop}
       />
     </div>
   )

@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react'
 import {
   PadraoMembrosInferiores,
   AchadoMembrosInferiores,
+  PulsoArterialMI,
+  PulsoPositionado,
 } from '@/lib/membros-inferiores/types'
 import PacienteInterativoMembrosInferiores from '@/components/membros-inferiores/PacienteInterativoMembrosInferiores'
+import BoxPulsosArteriais from '@/components/membros-inferiores/BoxPulsosArteriais'
 
 interface ModalMembrosInferioresProps {
   padrao?: PadraoMembrosInferiores
@@ -17,10 +20,17 @@ export default function ModalMembrosInferiores({
   onClose,
 }: ModalMembrosInferioresProps) {
   const [achados, setAchados] = useState<AchadoMembrosInferiores[]>([])
+  const [pulsosDrop, setPulsosDrop] = useState<PulsoPositionado[]>([])
+  const [draggedPulso, setDraggedPulso] = useState<PulsoArterialMI | null>(null)
+  const [erroPulso, setErroPulso] = useState<string | null>(null)
+  const [resetCounter, setResetCounter] = useState(0)
 
   // Resetar achados quando padrão muda
   useEffect(() => {
     setAchados([])
+    setPulsosDrop([])
+    setDraggedPulso(null)
+    setErroPulso(null)
   }, [padrao])
 
   // Fechar com tecla ESC
@@ -42,19 +52,79 @@ export default function ModalMembrosInferiores({
     setAchados([...achados, achado])
   }
 
+  const handleDragStartPulso = (pulsoId: PulsoArterialMI) => {
+    setDraggedPulso(pulsoId)
+    setErroPulso(null)
+  }
+
+  const handleDropPulso = (
+    xDrop: number,
+    yDrop: number,
+    vistaUsada: 'frontal' | 'posterior' | 'plantar'
+  ) => {
+    if (!draggedPulso) return
+
+    const { obterPulso, validarPosicaoPulso } = require('@/lib/membros-inferiores/coordenadas')
+    const { obterResultadoBuscaAtiva } = require('@/lib/membros-inferiores/resultados-buscaativa')
+
+    const pulso = obterPulso(draggedPulso)
+    if (!pulso) {
+      setDraggedPulso(null)
+      return
+    }
+
+    // Validar posição
+    if (!validarPosicaoPulso(pulso, xDrop, yDrop, vistaUsada)) {
+      if (pulso.vista !== vistaUsada) {
+        setErroPulso(
+          `Use a vista ${pulso.vista === 'posterior' ? 'posterior' : 'frontal'} para palpar a ${pulso.label.toLowerCase()}.`
+        )
+      } else {
+        setErroPulso('Local de palpação inadequado. Reposicione o ponto anatômico.')
+      }
+      setDraggedPulso(null)
+      return
+    }
+
+    // Validação passou - registrar achado
+    const resultado = obterResultadoBuscaAtiva(padrao, pulso.regiaoClinica, 'palpar_pulso_femoral')
+
+    const achado: AchadoMembrosInferiores = {
+      id: `pulso-${draggedPulso}-${Date.now()}`,
+      titulo: `${pulso.label}`,
+      descricao: resultado?.resultado || 'Pulso: 2+/4.',
+      categoria: 'pulsos',
+      regiao: pulso.regiaoClinica as any,
+      acaoRealizada: 'Palpação',
+    }
+
+    // Adicionar pulso posicionado
+    setPulsosDrop([...pulsosDrop, { id: draggedPulso, xDrop, yDrop, vista: vistaUsada }])
+
+    // Registrar achado
+    setAchados([...achados, achado])
+
+    setDraggedPulso(null)
+    setErroPulso(null)
+  }
+
   const handleResetar = () => {
     setAchados([])
+    setPulsosDrop([])
+    setDraggedPulso(null)
+    setErroPulso(null)
+    setResetCounter(c => c + 1)
   }
 
   const handleCopiar = () => {
-    const texto = achados
+    const todosAchados = achados
       .map((a) => {
         const regiao = a.regiao ? a.regiao.replace(/_/g, ' ') : ''
         const acao = a.acaoRealizada ? ` — ${a.acaoRealizada}` : ''
         return `${regiao}${acao}\n${a.descricao}`
       })
       .join('\n\n')
-    navigator.clipboard.writeText(texto)
+    navigator.clipboard.writeText(todosAchados)
     alert('Achados copiados para a área de transferência!')
   }
 
@@ -93,36 +163,56 @@ export default function ModalMembrosInferiores({
                 padrao={padrao}
                 onAcaoRealizada={handleAcaoRealizada}
                 achadosJaRegistrados={achados}
+                draggedPulso={draggedPulso}
+                onDropPulso={handleDropPulso}
+                resetCounter={resetCounter}
+                pulsosDrop={pulsosDrop}
               />
             </div>
 
-            {/* Coluna direita: Painel de achados */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
-              <h3 className="font-bold text-slate-800 text-lg">Achados encontrados</h3>
-              {achados.length > 0 ? (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {achados.map((achado, idx) => (
-                    <div
-                      key={`${achado.id}-${idx}`}
-                      className="p-3 bg-slate-50 rounded border border-slate-200 text-sm space-y-1"
-                    >
-                      <p className="font-semibold text-slate-800">{achado.titulo}</p>
-                      <p className="text-slate-700">{achado.descricao}</p>
-                    </div>
-                  ))}
+            {/* Coluna direita: Pulsos + Achados */}
+            <div className="space-y-4">
+              {/* Box de Palpação dos Pulsos */}
+              <BoxPulsosArteriais
+                pulsosPositionados={pulsosDrop.map(p => p.id)}
+                onDragStart={handleDragStartPulso}
+              />
+
+              {/* Aviso de erro de pulso */}
+              {erroPulso && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                  ⚠️ {erroPulso}
                 </div>
-              ) : (
-                <p className="text-slate-500 text-sm py-8 text-center">Nenhum achado registrado ainda. Clique em uma região das pernas para começar a avaliar.</p>
               )}
 
-              {/* Contador */}
-              {achados.length > 0 && (
-                <div className="pt-2 border-t border-slate-200">
-                  <p className="text-xs text-slate-500">
-                    {achados.length} achado{achados.length !== 1 ? 's' : ''} registrado{achados.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              )}
+              {/* Painel de achados */}
+              <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+                <h3 className="font-bold text-slate-800 text-lg">Achados encontrados</h3>
+                {achados.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {achados.map((achado, idx) => (
+                      <div
+                        key={`${achado.id}-${idx}`}
+                        className="p-3 bg-slate-50 rounded border border-slate-200 text-sm space-y-1"
+                      >
+                        <p className="font-semibold text-slate-800">{achado.titulo}</p>
+                        <p className="text-slate-700">{achado.descricao}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm py-8 text-center">Nenhum achado registrado ainda. Clique em uma região das pernas para começar a avaliar.</p>
+                )}
+
+                {/* Contador */}
+                {achados.length > 0 && (
+                  <div className="pt-2 border-t border-slate-200">
+                    <p className="text-xs text-slate-500">
+                      {achados.length} achado{achados.length !== 1 ? 's' : ''} registrado{achados.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
