@@ -270,24 +270,6 @@ export const REGIOES_POSTERIORES_MEMBROS_INFERIORES: RegiaoVisualMI[] = [
     height: 13,
   },
   {
-    id: 'posterior_planta_pe_direito',
-    label: 'Base plantar direita',
-    vista: 'posterior',
-    x: 18,
-    y: 88,
-    width: 28,
-    height: 10,
-  },
-  {
-    id: 'posterior_planta_pe_esquerdo',
-    label: 'Base plantar esquerda',
-    vista: 'posterior',
-    x: 55,
-    y: 88,
-    width: 28,
-    height: 10,
-  },
-  {
     id: 'posterior_trajeto_venoso_superficial_direito',
     label: 'Trajeto venoso superficial posterior direito',
     vista: 'posterior',
@@ -486,8 +468,6 @@ export const MAPA_REGIAO_VISUAL_PARA_CLINICA: Record<string, string> = {
   posterior_tornozelo_esquerdo: 'tornozelo_esquerdo',
   posterior_calcaneo_direito: 'planta_pe_direito',
   posterior_calcaneo_esquerdo: 'planta_pe_esquerdo',
-  posterior_planta_pe_direito: 'planta_pe_direito',
-  posterior_planta_pe_esquerdo: 'planta_pe_esquerdo',
   posterior_trajeto_venoso_superficial_direito: 'trajeto_venoso_superficial_direito',
   posterior_trajeto_venoso_superficial_esquerdo: 'trajeto_venoso_superficial_esquerdo',
 
