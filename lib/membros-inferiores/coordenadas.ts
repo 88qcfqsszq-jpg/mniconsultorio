@@ -4,7 +4,7 @@
 export interface RegiaoVisualMI {
   id: string
   label: string
-  vista: 'frontal' | 'posterior'
+  vista: 'frontal' | 'posterior' | 'plantar'
   x: number // porcentagem desde esquerda
   y: number // porcentagem desde topo
   width: number // largura em porcentagem
@@ -307,6 +307,154 @@ export const REGIOES_POSTERIORES_MEMBROS_INFERIORES: RegiaoVisualMI[] = [
   },
 ]
 
+// ===== VISTA BASE PLANTAR =====
+export const REGIOES_BASE_PLANTAR_MEMBROS_INFERIORES: RegiaoVisualMI[] = [
+  {
+    id: 'plantar_pe_direito',
+    label: 'Planta do pé direito',
+    vista: 'plantar',
+    x: 15,
+    y: 35,
+    width: 32,
+    height: 52,
+  },
+  {
+    id: 'plantar_pe_esquerdo',
+    label: 'Planta do pé esquerdo',
+    vista: 'plantar',
+    x: 53,
+    y: 35,
+    width: 32,
+    height: 52,
+  },
+  {
+    id: 'plantar_calcaneo_direito',
+    label: 'Calcâneo direito',
+    vista: 'plantar',
+    x: 18,
+    y: 29,
+    width: 26,
+    height: 20,
+  },
+  {
+    id: 'plantar_calcaneo_esquerdo',
+    label: 'Calcâneo esquerdo',
+    vista: 'plantar',
+    x: 56,
+    y: 29,
+    width: 26,
+    height: 20,
+  },
+  {
+    id: 'plantar_mediope_direito',
+    label: 'Médio-pé direito',
+    vista: 'plantar',
+    x: 18,
+    y: 49,
+    width: 26,
+    height: 22,
+  },
+  {
+    id: 'plantar_mediope_esquerdo',
+    label: 'Médio-pé esquerdo',
+    vista: 'plantar',
+    x: 56,
+    y: 49,
+    width: 26,
+    height: 22,
+  },
+  {
+    id: 'plantar_antepe_direito',
+    label: 'Antepé direito',
+    vista: 'plantar',
+    x: 16,
+    y: 69,
+    width: 30,
+    height: 16,
+  },
+  {
+    id: 'plantar_antepe_esquerdo',
+    label: 'Antepé esquerdo',
+    vista: 'plantar',
+    x: 54,
+    y: 69,
+    width: 30,
+    height: 16,
+  },
+  {
+    id: 'plantar_halux_direito',
+    label: 'Hálux direito',
+    vista: 'plantar',
+    x: 38,
+    y: 80,
+    width: 9,
+    height: 14,
+  },
+  {
+    id: 'plantar_halux_esquerdo',
+    label: 'Hálux esquerdo',
+    vista: 'plantar',
+    x: 53,
+    y: 80,
+    width: 9,
+    height: 14,
+  },
+  {
+    id: 'plantar_dedos_direito',
+    label: 'Dedos do pé direito',
+    vista: 'plantar',
+    x: 15,
+    y: 81,
+    width: 30,
+    height: 15,
+  },
+  {
+    id: 'plantar_dedos_esquerdo',
+    label: 'Dedos do pé esquerdo',
+    vista: 'plantar',
+    x: 55,
+    y: 81,
+    width: 30,
+    height: 15,
+  },
+  {
+    id: 'plantar_borda_lateral_direita',
+    label: 'Borda lateral plantar direita',
+    vista: 'plantar',
+    x: 14,
+    y: 42,
+    width: 8,
+    height: 40,
+  },
+  {
+    id: 'plantar_borda_lateral_esquerda',
+    label: 'Borda lateral plantar esquerda',
+    vista: 'plantar',
+    x: 78,
+    y: 42,
+    width: 8,
+    height: 40,
+  },
+  {
+    id: 'plantar_arco_medial_direito',
+    label: 'Arco medial direito',
+    vista: 'plantar',
+    x: 34,
+    y: 49,
+    width: 10,
+    height: 25,
+  },
+  {
+    id: 'plantar_arco_medial_esquerdo',
+    label: 'Arco medial esquerdo',
+    vista: 'plantar',
+    x: 56,
+    y: 49,
+    width: 10,
+    height: 25,
+  },
+]
+
 // ===== MAPEAMENTO VISUAL → CLÍNICO =====
 export const MAPA_REGIAO_VISUAL_PARA_CLINICA: Record<string, string> = {
   frontal_coxa_direita: 'coxa_direita',
@@ -342,6 +490,24 @@ export const MAPA_REGIAO_VISUAL_PARA_CLINICA: Record<string, string> = {
   posterior_planta_pe_esquerdo: 'planta_pe_esquerdo',
   posterior_trajeto_venoso_superficial_direito: 'trajeto_venoso_superficial_direito',
   posterior_trajeto_venoso_superficial_esquerdo: 'trajeto_venoso_superficial_esquerdo',
+
+  // PLANTAR
+  plantar_pe_direito: 'planta_pe_direito',
+  plantar_pe_esquerdo: 'planta_pe_esquerdo',
+  plantar_calcaneo_direito: 'planta_pe_direito',
+  plantar_calcaneo_esquerdo: 'planta_pe_esquerdo',
+  plantar_mediope_direito: 'planta_pe_direito',
+  plantar_mediope_esquerdo: 'planta_pe_esquerdo',
+  plantar_antepe_direito: 'planta_pe_direito',
+  plantar_antepe_esquerdo: 'planta_pe_esquerdo',
+  plantar_halux_direito: 'halux_direito',
+  plantar_halux_esquerdo: 'halux_esquerdo',
+  plantar_dedos_direito: 'planta_pe_direito',
+  plantar_dedos_esquerdo: 'planta_pe_esquerdo',
+  plantar_borda_lateral_direita: 'planta_pe_direito',
+  plantar_borda_lateral_esquerda: 'planta_pe_esquerdo',
+  plantar_arco_medial_direito: 'planta_pe_direito',
+  plantar_arco_medial_esquerdo: 'planta_pe_esquerdo',
 }
 
 export function obterRegiaoClinicaDesdeVisual(regiaoVisualId: string): string | undefined {
@@ -354,4 +520,8 @@ export function obterRegiaoVisualFrontal(id: string): RegiaoVisualMI | undefined
 
 export function obterRegiaoVisualPosterior(id: string): RegiaoVisualMI | undefined {
   return REGIOES_POSTERIORES_MEMBROS_INFERIORES.find(r => r.id === id)
+}
+
+export function obterRegiaoVisualPlantar(id: string): RegiaoVisualMI | undefined {
+  return REGIOES_BASE_PLANTAR_MEMBROS_INFERIORES.find(r => r.id === id)
 }

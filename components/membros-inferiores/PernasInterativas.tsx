@@ -1,6 +1,10 @@
 'use client'
 
-import { REGIOES_FRONTAIS_MEMBROS_INFERIORES, REGIOES_POSTERIORES_MEMBROS_INFERIORES } from '@/lib/membros-inferiores/coordenadas'
+import {
+  REGIOES_FRONTAIS_MEMBROS_INFERIORES,
+  REGIOES_POSTERIORES_MEMBROS_INFERIORES,
+  REGIOES_BASE_PLANTAR_MEMBROS_INFERIORES,
+} from '@/lib/membros-inferiores/coordenadas'
 import MapaImagemMI from '@/components/membros-inferiores/MapaImagemMI'
 
 interface PernasInterativasProps {
@@ -13,7 +17,7 @@ export default function PernasInterativas({
   onSelecionarRegiao,
 }: PernasInterativasProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       {/* Vista Frontal */}
       <MapaImagemMI
         titulo="Frontal"
@@ -28,6 +32,15 @@ export default function PernasInterativas({
         titulo="Posterior"
         src="/images/boneco/pernas_posterior_hotspot.png"
         regioes={REGIOES_POSTERIORES_MEMBROS_INFERIORES}
+        regiaoSelecionada={regiaoSelecionada}
+        onSelecionarRegiao={onSelecionarRegiao}
+      />
+
+      {/* Vista Base Plantar */}
+      <MapaImagemMI
+        titulo="Base plantar"
+        src="/images/boneco/base-plantar.png"
+        regioes={REGIOES_BASE_PLANTAR_MEMBROS_INFERIORES}
         regiaoSelecionada={regiaoSelecionada}
         onSelecionarRegiao={onSelecionarRegiao}
       />
