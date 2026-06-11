@@ -505,3 +505,109 @@ export function obterRegiaoVisualPosterior(id: string): RegiaoVisualMI | undefin
 export function obterRegiaoVisualPlantar(id: string): RegiaoVisualMI | undefined {
   return REGIOES_BASE_PLANTAR_MEMBROS_INFERIORES.find(r => r.id === id)
 }
+
+// ===== PULSOS ARTERIAIS =====
+import { PulsoArterial } from './types'
+
+export const PULSOS_ARTERIAIS_MI: PulsoArterial[] = [
+  {
+    id: 'femoral_direita',
+    label: 'Artéria femoral direita',
+    labelCurto: 'Femoral D',
+    vista: 'frontal',
+    regiaoClinica: 'coxa_direita',
+    x: 34,
+    y: 18,
+    tolerancia: 8,
+  },
+  {
+    id: 'femoral_esquerda',
+    label: 'Artéria femoral esquerda',
+    labelCurto: 'Femoral E',
+    vista: 'frontal',
+    regiaoClinica: 'coxa_esquerda',
+    x: 66,
+    y: 18,
+    tolerancia: 8,
+  },
+  {
+    id: 'poplitea_direita',
+    label: 'Artéria poplítea direita',
+    labelCurto: 'Poplítea D',
+    vista: 'posterior',
+    regiaoClinica: 'regiao_poplitea_direita',
+    x: 34,
+    y: 38,
+    tolerancia: 8,
+  },
+  {
+    id: 'poplitea_esquerda',
+    label: 'Artéria poplítea esquerda',
+    labelCurto: 'Poplítea E',
+    vista: 'posterior',
+    regiaoClinica: 'regiao_poplitea_esquerda',
+    x: 66,
+    y: 38,
+    tolerancia: 8,
+  },
+  {
+    id: 'tibial_posterior_direita',
+    label: 'Artéria tibial posterior direita',
+    labelCurto: 'Tibial posterior D',
+    vista: 'frontal',
+    regiaoClinica: 'maleolo_medial_direito',
+    x: 41,
+    y: 75,
+    tolerancia: 7,
+  },
+  {
+    id: 'tibial_posterior_esquerda',
+    label: 'Artéria tibial posterior esquerda',
+    labelCurto: 'Tibial posterior E',
+    vista: 'frontal',
+    regiaoClinica: 'maleolo_medial_esquerdo',
+    x: 59,
+    y: 75,
+    tolerancia: 7,
+  },
+  {
+    id: 'dorsal_pe_direita',
+    label: 'Artéria dorsal do pé direita',
+    labelCurto: 'Dorsal do pé D',
+    vista: 'frontal',
+    regiaoClinica: 'dorso_pe_direito',
+    x: 32,
+    y: 84,
+    tolerancia: 8,
+  },
+  {
+    id: 'dorsal_pe_esquerda',
+    label: 'Artéria dorsal do pé esquerda',
+    labelCurto: 'Dorsal do pé E',
+    vista: 'frontal',
+    regiaoClinica: 'dorso_pe_esquerdo',
+    x: 68,
+    y: 84,
+    tolerancia: 8,
+  },
+]
+
+export function obterPulso(id: string): PulsoArterial | undefined {
+  return PULSOS_ARTERIAIS_MI.find(p => p.id === id)
+}
+
+export function validarPosicaoPulso(
+  pulso: PulsoArterial,
+  xDrop: number,
+  yDrop: number,
+  vistaUsada: string
+): boolean {
+  // Validar vista
+  if (pulso.vista !== vistaUsada) {
+    return false
+  }
+
+  // Validar posição dentro da tolerância
+  const distancia = Math.sqrt(Math.pow(xDrop - pulso.x, 2) + Math.pow(yDrop - pulso.y, 2))
+  return distancia <= pulso.tolerancia
+}

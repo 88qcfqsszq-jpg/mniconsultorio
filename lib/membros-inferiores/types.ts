@@ -97,3 +97,31 @@ export interface DefinicaoRegiaoMembro {
   lado: 'direito' | 'esquerdo'
   acoesDisponiveis: AcaoBuscaAtiva[]
 }
+
+export type PulsoArterialMI =
+  | 'femoral_direita'
+  | 'femoral_esquerda'
+  | 'poplitea_direita'
+  | 'poplitea_esquerda'
+  | 'tibial_posterior_direita'
+  | 'tibial_posterior_esquerda'
+  | 'dorsal_pe_direita'
+  | 'dorsal_pe_esquerda'
+
+export interface PulsoArterial {
+  id: PulsoArterialMI
+  label: string
+  labelCurto: string
+  vista: 'frontal' | 'posterior' | 'plantar'
+  regiaoClinica: string
+  x: number
+  y: number
+  tolerancia: number
+}
+
+export interface PulsoPositionado {
+  id: PulsoArterialMI
+  xDrop: number
+  yDrop: number
+  vista: 'frontal' | 'posterior' | 'plantar'
+}
